@@ -12,12 +12,18 @@ class _MobileMachineView extends StatefulWidget {
 class _MobileMachineViewState extends State<_MobileMachineView>
     with SingleTickerProviderStateMixin, _MaintenanceStateMixin {
   late TabController _tab;
+  late final MachineController _machineController;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 5, vsync: this);
     _tab.addListener(() => setState(() {}));
+
+    if (!Get.isRegistered<MachineController>()) {
+      Get.put(MachineController());
+    }
+    _machineController = MachineController.instance;
   }
 
   @override
@@ -32,29 +38,31 @@ class _MobileMachineViewState extends State<_MobileMachineView>
     final percents = weeklyUsagePercents;
     final totalMins = totalWeeklyMinutes;
 
-    return Scaffold(
-      backgroundColor: _C.bg,
-      appBar: _buildAppBar(schedule),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _MobileMachinesTab(
-            machines: _machines,
-            onMachineTap: _showMachineDetail,
-          ),
-          _MobileUsageTab(percents: percents, totalMinutes: totalMins),
-          _MobileScheduleTab(tasks: schedule),
-          _MobileHistoryTab(logs: _logs),
-          _MobileIssuesTab(issues: _issues),
-        ],
+    return Obx(
+      () => Scaffold(
+        backgroundColor: _C.bg,
+        appBar: _buildAppBar(schedule),
+        body: TabBarView(
+          controller: _tab,
+          children: [
+            _MobileMachinesTab(
+              machines: _machineController.machines,
+              onMachineTap: _showMachineDetail,
+              onEditMachine: _editMachine,
+            ),
+            _MobileUsageTab(percents: percents, totalMinutes: totalMins),
+            _MobileScheduleTab(tasks: schedule),
+            const _SharedHistoryContent(
+              padding: EdgeInsets.fromLTRB(14, 16, 14, 40),
+            ),
+            _MobileIssuesTab(issues: _issues),
+          ],
+        ),
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(List<ScheduledTask> schedule) {
-    final openIssues = _issues.where((i) => i.status != IssueStatus.fixed).length;
-    final criticalIssues = _issues.where((i) => i.priority == IssuePriority.critical && i.status != IssueStatus.fixed).length;
-
     return AppBar(
       backgroundColor: _C.surface,
       elevation: 0,
@@ -71,24 +79,17 @@ class _MobileMachineViewState extends State<_MobileMachineView>
         ]),
       ]),
       actions: [
-        if (criticalIssues > 0)
-          Padding(padding: const EdgeInsets.only(right: 4),
-            child: Center(child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: _C.roseLight, borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _C.rose.withOpacity(0.3))),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.error_rounded, size: 12, color: _C.rose),
-                const SizedBox(width: 4),
-                Text('$criticalIssues', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _C.rose)),
-              ])))),
+        IconButton(
+          icon: const Icon(Icons.add_rounded, color: _C.indigo, size: 22),
+          onPressed: _addMachine,
+        ),
         const SizedBox(width: 8),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(48),
         child: Container(
           color: _C.surface,
-          child: TabBar(
+          child: Obx(() => TabBar(
             controller: _tab,
             isScrollable: true,
             labelColor: _C.indigo,
@@ -102,20 +103,22 @@ class _MobileMachineViewState extends State<_MobileMachineView>
             tabAlignment: TabAlignment.start,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             tabs: [
-              _TabItem(label: 'Maintenance', count: _machines.length),
+              _TabItem(label: 'Maintenance', count: _machineController.machines.length),
               _TabItem(label: 'Usage', count: _usageSessions.length),
               _TabItem(label: 'Schedule',
                 count: schedule.where((s) => s.status != ScheduleStatus.completed).length),
-              _TabItem(label: 'History', count: _logs.length),
-              _TabItem(label: 'Issues', count: openIssues, alertCount: criticalIssues),
+              _TabItem(label: 'History', count: _machineController.machines.length),
+              _TabItem(label: 'Issues',
+                count: _issues.where((i) => i.status != IssueStatus.fixed).length,
+                alertCount: _issues.where((i) => i.priority == IssuePriority.critical && i.status != IssueStatus.fixed).length),
             ],
-          ),
+          )),
         ),
       ),
     );
   }
 
-  void _showMachineDetail(Machine machine) {
+  void _showMachineDetail(MachineModel machine) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -143,25 +146,100 @@ class _MobileMachineViewState extends State<_MobileMachineView>
       ),
     );
   }
+
+  void _editMachine(MachineModel machine) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        builder: (_, sc) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(children: [
+            Container(margin: const EdgeInsets.only(top: 10), width: 36, height: 4,
+              decoration: BoxDecoration(color: _C.border, borderRadius: BorderRadius.circular(4))),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: sc,
+                child: _EditMachinePanel(
+                  machine: machine,
+                  onClose: () => Navigator.pop(context),
+                  onSave: (updated) async {
+                    await _machineController.updateMachine(updated);
+                  },
+                  onDelete: (id) async {
+                    await _machineController.deleteMachine(id);
+                  },
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _addMachine() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        builder: (_, sc) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(children: [
+            Container(margin: const EdgeInsets.only(top: 10), width: 36, height: 4,
+              decoration: BoxDecoration(color: _C.border, borderRadius: BorderRadius.circular(4))),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: sc,
+                child: _AddMachinePanel(
+                  onClose: () => Navigator.pop(context),
+                  onAdd: (newMachine) async {
+                    await _machineController.addMachine(newMachine);
+                  },
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
 //  MOBILE: MACHINES TAB
 // ─────────────────────────────────────────────
 class _MobileMachinesTab extends StatelessWidget {
-  final List<Machine> machines;
-  final ValueChanged<Machine> onMachineTap;
-  const _MobileMachinesTab({required this.machines, required this.onMachineTap});
+  final List<MachineModel> machines;
+  final ValueChanged<MachineModel> onMachineTap;
+  final ValueChanged<MachineModel> onEditMachine;
+
+  const _MobileMachinesTab({
+    required this.machines,
+    required this.onMachineTap,
+    required this.onEditMachine,
+  });
 
   @override
   Widget build(BuildContext context) {
     final inUse = machines.where((m) => m.currentJob != null).length;
     final available = machines.where((m) => (m.status == MachineStatus.operational || m.status == MachineStatus.idle) && m.currentJob == null).length;
     final maint = machines.where((m) => m.status == MachineStatus.underMaintenance).length;
-    final broken = machines.where((m) => m.status == MachineStatus.broken).length;
-
     return Column(children: [
-      // Mini stats strip
       Container(
         color: _C.surface,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
@@ -173,19 +251,27 @@ class _MobileMachinesTab extends StatelessWidget {
             _MobileStatCard(label: 'Available', value: available.toString(), color: _C.indigo, icon: Icons.check_circle_rounded),
             const SizedBox(width: 8),
             _MobileStatCard(label: 'Maintenance', value: maint.toString(), color: _C.amber, icon: Icons.build_rounded),
-            const SizedBox(width: 8),
-            _MobileStatCard(label: 'Down', value: broken.toString(), color: _C.rose, icon: Icons.error_rounded),
           ]),
         ),
       ),
-      // Machine cards list
       Expanded(
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 40),
-          itemCount: machines.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => _MobileMachineCard(machine: machines[i], onTap: () => onMachineTap(machines[i])),
-        ),
+        child: machines.isEmpty
+            ? const Center(
+                child: Text(
+                  'No Machine saved',
+                  style: TextStyle(fontSize: 13, color: _C.textMuted),
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 40),
+                itemCount: machines.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (_, i) => _MobileMachineCard(
+                  machine: machines[i],
+                  onTap: () => onMachineTap(machines[i]),
+                  onEdit: () => onEditMachine(machines[i]),
+                ),
+              ),
       ),
     ]);
   }
@@ -195,20 +281,21 @@ class _MobileMachinesTab extends StatelessWidget {
 //  MOBILE: MACHINE CARD
 // ─────────────────────────────────────────────
 class _MobileMachineCard extends StatelessWidget {
-  final Machine machine;
+  final MachineModel machine;
   final VoidCallback onTap;
-  const _MobileMachineCard({required this.machine, required this.onTap});
+  final VoidCallback onEdit;
+
+  const _MobileMachineCard({
+    required this.machine,
+    required this.onTap,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final ds = _displayStatus(machine);
     final sm = _statusMeta(machine.status);
     final usedBy = machine.currentOperator ?? machine.reservedBy;
-    final nextIsOverdue = machine.nextMaintenance.isBefore(DateTime.now());
-    final nextDays = machine.nextMaintenance.difference(DateTime.now()).inDays;
-    final nextColor = nextIsOverdue ? _C.rose : nextDays <= 7 ? _C.amber : _C.emerald;
-    final isBroken = machine.status == MachineStatus.broken;
-    final isMaint = machine.status == MachineStatus.underMaintenance;
 
     return GestureDetector(
       onTap: onTap,
@@ -216,18 +303,16 @@ class _MobileMachineCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isBroken ? _C.rose.withOpacity(0.35) : isMaint ? _C.amber.withOpacity(0.3) : _C.border),
+          border: Border.all(color: machine.status == MachineStatus.broken ? _C.rose.withOpacity(0.35) : _C.border),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Column(children: [
-            // Status accent strip
             Container(height: 3, color: ds.color),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Row 1: name + status badge
                 Row(children: [
                   Container(padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: sm.light, borderRadius: BorderRadius.circular(9)),
@@ -235,37 +320,14 @@ class _MobileMachineCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(machine.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _C.textPrimary)),
-                    Text('${machine.id}  ·  ${machine.location}', style: const TextStyle(fontSize: 11, color: _C.textMuted)),
+                    Text('${machine.id}  ·  ${machine.model}', style: const TextStyle(fontSize: 11, color: _C.textMuted)),
                   ])),
                   _SharedStatusBadge(displayStatus: ds),
                 ]),
                 const SizedBox(height: 10),
-
-                // Row 2: type + uptime
-                Row(children: [
-                  _TypeBadge(type: machine.type),
-                  const Spacer(),
-                  Row(children: [
-                    const Icon(Icons.speed_rounded, size: 12, color: _C.textMuted),
-                    const SizedBox(width: 4),
-                    Text('${machine.uptimePercent}% uptime',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                        color: machine.uptimePercent >= 90 ? _C.emerald : machine.uptimePercent >= 75 ? _C.amber : _C.rose)),
-                  ]),
-                ]),
-                const SizedBox(height: 8),
-
-                // Uptime bar
-                ClipRRect(borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(value: machine.uptimePercent / 100, minHeight: 5,
-                    backgroundColor: _C.border,
-                    valueColor: AlwaysStoppedAnimation(machine.uptimePercent >= 90 ? _C.emerald : machine.uptimePercent >= 75 ? _C.amber : _C.rose))),
-
+                Row(children: [_TypeBadge(type: machine.type)]),
                 const SizedBox(height: 10),
-
-                // Row 3: Used By / Reserved + maintenance dates
                 Row(children: [
-                  // Used by column
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Text('Used By', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.textMuted, letterSpacing: 0.3)),
                     const SizedBox(height: 3),
@@ -280,25 +342,15 @@ class _MobileMachineCard extends StatelessWidget {
                           ])
                         : const Text('—', style: TextStyle(fontSize: 12, color: _C.textMuted)),
                   ])),
-                  const SizedBox(width: 12),
-                  // Last maintenance column
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Last Maint.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.textMuted, letterSpacing: 0.3)),
-                    const SizedBox(height: 3),
-                    Text(_daysAgo(machine.lastMaintenance),
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.textSecondary)),
-                  ])),
-                  const SizedBox(width: 12),
-                  // Next maintenance column
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Next Maint.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.textMuted, letterSpacing: 0.3)),
-                    const SizedBox(height: 3),
-                    Text(nextIsOverdue ? 'Overdue!' : 'In ${nextDays}d',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: nextColor)),
-                  ])),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.edit_rounded, size: 18, color: _C.indigo),
+                    onPressed: onEdit,
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                    tooltip: 'Edit machine',
+                  ),
                 ]),
-
-                // Active job (if any)
                 if (machine.currentJob != null) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -309,12 +361,9 @@ class _MobileMachineCard extends StatelessWidget {
                       Container(width: 6, height: 6, margin: const EdgeInsets.only(right: 6),
                         decoration: const BoxDecoration(color: _C.emerald, shape: BoxShape.circle)),
                       Text('Active: ${machine.currentJob}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.emerald, fontFamily: 'monospace')),
-                      const Spacer(),
-                      Text(machine.assignedTech, style: const TextStyle(fontSize: 11, color: _C.emerald)),
                     ]),
                   ),
                 ],
-
                 const SizedBox(height: 6),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   const Text('View details', style: TextStyle(fontSize: 11, color: _C.indigo, fontWeight: FontWeight.w600)),
@@ -352,18 +401,14 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 40),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Weekly chart card
         _SharedWeeklyUsageChart(percents: widget.percents, totalMinutes: widget.totalMinutes),
         const SizedBox(height: 20),
-
         const Text('Usage History Per Machine',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.textPrimary)),
         const SizedBox(height: 4),
         const Text('Tap a machine to see its sessions',
           style: TextStyle(fontSize: 12, color: _C.textSecondary)),
         const SizedBox(height: 12),
-
-        // Machine selector chips
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -400,8 +445,6 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
             }).toList(),
           ),
         ),
-
-        // Session detail for selected machine
         if (_selectedId != null) ...[
           const SizedBox(height: 16),
           Builder(builder: (_) {
@@ -410,9 +453,7 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
               ..sort((a, b) => b.start.compareTo(a.start));
             final pct = widget.percents[_selectedId] ?? 0.0;
             final mins = ((pct / 100) * widget.totalMinutes).round();
-
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Machine title + weekly stat
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -457,8 +498,6 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
             ]);
           }),
         ],
-
-        // All sessions by machine
         const SizedBox(height: 24),
         const Text('All Sessions This Week',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.textPrimary)),
@@ -470,11 +509,9 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
           if (machineSessions.isEmpty) return const SizedBox.shrink();
           final pct = widget.percents[m.id] ?? 0.0;
           final mins = ((pct / 100) * widget.totalMinutes).round();
-
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Machine header
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
@@ -491,7 +528,6 @@ class _MobileUsageTabState extends State<_MobileUsageTab> {
                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.indigo))),
                 ]),
               ),
-              // Session cards
               ...machineSessions.map((s) => _MobileSessionCard(session: s)),
             ]),
           );
@@ -582,22 +618,6 @@ class _MobileScheduleTab extends StatelessWidget {
           ...completed.map((t) => _SharedScheduleCard(task: t)),
         ],
       ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  MOBILE: HISTORY TAB
-// ─────────────────────────────────────────────
-class _MobileHistoryTab extends StatelessWidget {
-  final List<MaintenanceLog> logs;
-  const _MobileHistoryTab({required this.logs});
-  @override
-  Widget build(BuildContext context) {
-    final sorted = [...logs]..sort((a, b) => b.date.compareTo(a.date));
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 40),
-      child: Column(children: sorted.map((l) => _SharedLogCard(log: l)).toList()),
     );
   }
 }

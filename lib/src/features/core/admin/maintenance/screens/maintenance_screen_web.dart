@@ -12,12 +12,20 @@ class _WebMaintenanceView extends StatefulWidget {
 class _WebMaintenanceViewState extends State<_WebMaintenanceView>
     with SingleTickerProviderStateMixin, _MaintenanceStateMixin {
   late TabController _tab;
+  bool _isAddingMachine = false;
+  MachineModel? _editingMachine;
+  late final MachineController _machineController;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 5, vsync: this);
     _tab.addListener(() => setState(() {}));
+
+    if (!Get.isRegistered<MachineController>()) {
+      Get.put(MachineController());
+    }
+    _machineController = MachineController.instance;
   }
 
   @override
@@ -31,78 +39,129 @@ class _WebMaintenanceViewState extends State<_WebMaintenanceView>
     final schedule = mergedSchedule;
     final percents = weeklyUsagePercents;
     final totalMins = totalWeeklyMinutes;
+    final machines = _machineController.machines;
 
-    return Scaffold(
-      backgroundColor: _C.bg,
-      body: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── TOP HEADER ──
-            Container(
-              color: _C.surface,
-              padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _buildHeader(schedule),
-                const SizedBox(height: 20),
-                _buildTopStats(schedule),
-                const SizedBox(height: 20),
-                TabBar(
+    return Obx(
+      () => Scaffold(
+        backgroundColor: _C.bg,
+        body: Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                color: _C.surface,
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _buildHeader(schedule),
+                  const SizedBox(height: 20),
+                  _buildTopStats(machines),
+                  const SizedBox(height: 20),
+                  TabBar(
+                    controller: _tab,
+                    isScrollable: true,
+                    labelColor: _C.indigo,
+                    unselectedLabelColor: _C.textMuted,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                    indicatorColor: _C.indigo,
+                    indicatorWeight: 2.5,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    dividerColor: _C.border,
+                    tabs: [
+                      _TabItem(label: 'Maintenance', count: machines.length),
+                      _TabItem(label: 'Usage', count: _usageSessions.length),
+                      _TabItem(
+                        label: 'Schedule',
+                        count: schedule.where((s) => s.status != ScheduleStatus.completed).length,
+                      ),
+                      _TabItem(label: 'History', count: machines.length),
+                      _TabItem(
+                        label: 'Issues',
+                        count: _issues.where((i) => i.status != IssueStatus.fixed).length,
+                        alertCount: _issues
+                            .where((i) =>
+                                i.priority == IssuePriority.critical &&
+                                i.status != IssueStatus.fixed)
+                            .length,
+                      ),
+                    ],
+                  ),
+                ]),
+              ),
+              Expanded(
+                child: TabBarView(
                   controller: _tab,
-                  isScrollable: true,
-                  labelColor: _C.indigo,
-                  unselectedLabelColor: _C.textMuted,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                  indicatorColor: _C.indigo,
-                  indicatorWeight: 2.5,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerColor: _C.border,
-                  tabs: [
-                    _TabItem(label: 'Maintenance', count: _machines.length),
-                    _TabItem(label: 'Usage', count: _usageSessions.length),
-                    _TabItem(label: 'Schedule',
-                      count: schedule.where((s) => s.status != ScheduleStatus.completed).length),
-                    _TabItem(label: 'History', count: _logs.length),
-                    _TabItem(label: 'Issues',
-                      count: _issues.where((i) => i.status != IssueStatus.fixed).length,
-                      alertCount: _issues.where((i) => i.priority == IssuePriority.critical && i.status != IssueStatus.fixed).length),
+                  children: [
+                    _WebMachinesTab(
+                      machines: machines,
+                      selectedMachine: selectedMachine,
+                      onSelect: (m) => setState(
+                        () => selectedMachine = selectedMachine?.id == m.id ? null : m,
+                      ),
+                      onEdit: (m) => setState(() {
+                        _isAddingMachine = false;
+                        selectedMachine = null;
+                        _editingMachine = m;
+                      }),
+                    ),
+                    _WebUsageTab(percents: percents, totalMinutes: totalMins),
+                    _WebScheduleTab(tasks: schedule),
+                    const _SharedHistoryContent(
+                      padding: EdgeInsets.fromLTRB(28, 20, 28, 40),
+                    ),
+                    _WebIssuesTab(issues: _issues),
                   ],
                 ),
-              ]),
-            ),
-            // ── TAB BODY ──
-            Expanded(
-              child: TabBarView(
-                controller: _tab,
-                children: [
-                  _WebMachinesTab(
-                    machines: _machines,
-                    selectedMachine: selectedMachine,
-                    onSelect: (m) => setState(() => selectedMachine = selectedMachine?.id == m.id ? null : m),
-                  ),
-                  _WebUsageTab(percents: percents, totalMinutes: totalMins),
-                  _WebScheduleTab(tasks: schedule),
-                  _WebHistoryTab(logs: _logs),
-                  _WebIssuesTab(issues: _issues),
-                ],
               ),
-            ),
-          ]),
-        ),
-        // ── MACHINE DETAIL PANEL ──
-        if (selectedMachine != null && _tab.index == 0)
-          Container(
-            width: 360,
-            constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
-            decoration: const BoxDecoration(color: _C.surface, border: Border(left: BorderSide(color: _C.border))),
-            child: _SharedMachineDetailContent(
-              machine: selectedMachine!,
-              onClose: () => setState(() => selectedMachine = null),
-            ),
+            ]),
           ),
-      ]),
+          if ((_isAddingMachine || _editingMachine != null || selectedMachine != null) &&
+              _tab.index == 0)
+            Container(
+              width: 360,
+              constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
+              decoration: const BoxDecoration(
+                color: _C.surface,
+                border: Border(left: BorderSide(color: _C.border)),
+              ),
+              child: _isAddingMachine
+                  ? _AddMachinePanel(
+                      onClose: () => setState(() => _isAddingMachine = false),
+                      onAdd: (newMachine) async {
+                        await _machineController.addMachine(newMachine);
+                      },
+                    )
+                  : _editingMachine != null
+                      ? _EditMachinePanel(
+                          machine: _editingMachine!,
+                          onClose: () => setState(() => _editingMachine = null),
+                          onSave: (updated) async {
+                            await _machineController.updateMachine(updated);
+                          },
+                          onDelete: (id) async {
+                            await _machineController.deleteMachine(id);
+                            if (mounted) {
+                              setState(() {
+                                _editingMachine = null;
+                                selectedMachine = null;
+                              });
+                            }
+                          },
+                        )
+                      : _SharedMachineDetailContent(
+                          machine: selectedMachine!,
+                          onClose: () => setState(() => selectedMachine = null),
+                        ),
+            ),
+        ]),
+      ),
     );
   }
+
+  void _addMachine() => setState(() {
+    selectedMachine = null;
+    _isAddingMachine = true;
+    _editingMachine = null;
+  });
 
   Widget _buildHeader(List<ScheduledTask> schedule) {
     return Row(children: [
@@ -118,51 +177,58 @@ class _WebMaintenanceViewState extends State<_WebMaintenanceView>
           Text('Equipment status, usage tracking & maintenance', style: TextStyle(fontSize: 13, color: _C.textSecondary)),
         ]),
       ])),
-      if (_issues.any((i) => i.priority == IssuePriority.critical && i.status != IssueStatus.fixed))
-        _PillBadge(
-          label: '${_issues.where((i) => i.priority == IssuePriority.critical && i.status != IssueStatus.fixed).length} Critical Issues',
-          color: _C.rose, light: _C.roseLight, icon: Icons.error_rounded),
       const SizedBox(width: 8),
-      if (schedule.any((s) => s.status == ScheduleStatus.overdue))
-        _PillBadge(label: 'Overdue Tasks', color: _C.amber, light: _C.amberLight, icon: Icons.schedule_rounded),
+      ElevatedButton.icon(
+        onPressed: _addMachine,
+        icon: const Icon(Icons.add_rounded, size: 16),
+        label: const Text('Add Machine'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _C.indigo,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 0,
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        ),
+      ),
     ]);
   }
 
-  Widget _buildTopStats(List<ScheduledTask> schedule) {
-    final inUse = _machines.where((m) => m.currentJob != null).length;
-    final available = _machines.where((m) => m.status == MachineStatus.operational && m.currentJob == null || m.status == MachineStatus.idle).length;
-    final maint = _machines.where((m) => m.status == MachineStatus.underMaintenance).length;
-    final broken = _machines.where((m) => m.status == MachineStatus.broken).length;
-    final openIssues = _issues.where((i) => i.status != IssueStatus.fixed).length;
-    final overdue = schedule.where((s) => s.status == ScheduleStatus.overdue).length;
-
+  Widget _buildTopStats(List<MachineModel> machines) {
+    final inUse = machines.where((m) => m.currentJob != null).length;
+    final available = machines
+        .where((m) =>
+            ((m.status == MachineStatus.operational || m.status == MachineStatus.idle) &&
+                m.currentJob == null))
+        .length;
+    final maint = machines.where((m) => m.status == MachineStatus.underMaintenance).length;
     return Row(children: [
       _StatChip(label: 'In Use', value: inUse.toString(), color: _C.emerald, icon: Icons.circle_rounded),
       const SizedBox(width: 10),
       _StatChip(label: 'Available', value: available.toString(), color: _C.indigo, icon: Icons.check_circle_rounded),
       const SizedBox(width: 10),
       _StatChip(label: 'Maintenance', value: maint.toString(), color: _C.amber, icon: Icons.build_rounded),
-      const SizedBox(width: 10),
-      _StatChip(label: 'Down', value: broken.toString(), color: _C.rose, icon: Icons.error_rounded),
-      const SizedBox(width: 10),
-      _StatChip(label: 'Open Issues', value: openIssues.toString(), color: _C.violet, icon: Icons.report_rounded),
-      const SizedBox(width: 10),
-      _StatChip(label: 'Overdue', value: overdue.toString(), color: _C.amber, icon: Icons.warning_rounded),
       const Spacer(),
-      Text('${_machines.length} total machines', style: const TextStyle(fontSize: 12, color: _C.textMuted)),
+      Text('${machines.length} total machines', style: const TextStyle(fontSize: 12, color: _C.textMuted)),
     ]);
   }
 }
 
 // ─────────────────────────────────────────────
-//  WEB: MACHINES TAB  (status table)
+//  WEB: MACHINES TAB
 // ─────────────────────────────────────────────
 class _WebMachinesTab extends StatelessWidget {
-  final List<Machine> machines;
-  final Machine? selectedMachine;
-  final ValueChanged<Machine> onSelect;
+  final List<MachineModel> machines;
+  final MachineModel? selectedMachine;
+  final ValueChanged<MachineModel> onSelect;
+  final ValueChanged<MachineModel> onEdit;
 
-  const _WebMachinesTab({required this.machines, required this.selectedMachine, required this.onSelect});
+  const _WebMachinesTab({
+    required this.machines,
+    required this.selectedMachine,
+    required this.onSelect,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +236,6 @@ class _WebMachinesTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
       child: _WebTableBox(
         child: Column(children: [
-          // Table header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: const BoxDecoration(color: _C.bg, borderRadius: BorderRadius.vertical(top: Radius.circular(14))),
@@ -179,18 +244,30 @@ class _WebMachinesTab extends StatelessWidget {
               Expanded(flex: 2, child: _WebTH('Type')),
               Expanded(flex: 2, child: _WebTH('Status')),
               Expanded(flex: 2, child: _WebTH('Used By')),
-              Expanded(flex: 2, child: _WebTH('Last Maintenance')),
-              Expanded(flex: 2, child: _WebTH('Next Maintenance')),
-              Expanded(flex: 2, child: _WebTH('Uptime')),
+              Expanded(flex: 1, child: _WebTH('Edit')),
             ]),
           ),
           const Divider(height: 1, color: _C.border),
-          ...machines.asMap().entries.map((e) => _WebMachineRow(
-            machine: e.value,
-            isEven: e.key.isEven,
-            isSelected: selectedMachine?.id == e.value.id,
-            onTap: () => onSelect(e.value),
-          )),
+          if (machines.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  'No Machine saved',
+                  style: TextStyle(fontSize: 13, color: _C.textMuted),
+                ),
+              ),
+            )
+          else
+            ...machines.asMap().entries.map(
+                  (e) => _WebMachineRow(
+                    machine: e.value,
+                    isEven: e.key.isEven,
+                    isSelected: selectedMachine?.id == e.value.id,
+                    onTap: () => onSelect(e.value),
+                    onEdit: () => onEdit(e.value),
+                  ),
+                ),
         ]),
       ),
     );
@@ -198,17 +275,22 @@ class _WebMachinesTab extends StatelessWidget {
 }
 
 class _WebMachineRow extends StatelessWidget {
-  final Machine machine;
+  final MachineModel machine;
   final bool isEven, isSelected;
   final VoidCallback onTap;
-  const _WebMachineRow({required this.machine, required this.isEven, required this.isSelected, required this.onTap});
+  final VoidCallback onEdit;
+
+  const _WebMachineRow({
+    required this.machine,
+    required this.isEven,
+    required this.isSelected,
+    required this.onTap,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final ds = _displayStatus(machine);
-    final nextIsOverdue = machine.nextMaintenance.isBefore(DateTime.now());
-    final nextDays = machine.nextMaintenance.difference(DateTime.now()).inDays;
-    final nextColor = nextIsOverdue ? _C.rose : nextDays <= 7 ? _C.amber : _C.textSecondary;
     final usedBy = machine.currentOperator ?? machine.reservedBy;
 
     return InkWell(
@@ -221,7 +303,6 @@ class _WebMachineRow extends StatelessWidget {
           border: Border(left: BorderSide(color: isSelected ? _C.indigo : Colors.transparent, width: 3)),
         ),
         child: Row(children: [
-          // Name + model
           Expanded(flex: 4, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(machine.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _C.textPrimary)),
             Text('${machine.id}  ·  ${machine.model}', style: const TextStyle(fontSize: 11, color: _C.textMuted)),
@@ -232,11 +313,8 @@ class _WebMachineRow extends StatelessWidget {
                 Text(machine.currentJob!, style: const TextStyle(fontSize: 10, color: _C.emerald, fontFamily: 'monospace', fontWeight: FontWeight.w600)),
               ])),
           ])),
-          // Type
           Expanded(flex: 2, child: _TypeBadge(type: machine.type)),
-          // Status
           Expanded(flex: 2, child: _SharedStatusBadge(displayStatus: ds)),
-          // Used By
           Expanded(flex: 2, child: usedBy != null
             ? Row(children: [
                 _Avatar(name: usedBy, size: 22, color: machine.currentOperator != null ? _C.emerald : _C.sky),
@@ -246,27 +324,27 @@ class _WebMachineRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis)),
               ])
             : const Text('—', style: TextStyle(fontSize: 12, color: _C.textMuted))),
-          // Last maintenance
-          Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_daysAgo(machine.lastMaintenance), style: const TextStyle(fontSize: 12, color: _C.textSecondary)),
-            Text(_fmtDate(machine.lastMaintenance), style: const TextStyle(fontSize: 10, color: _C.textMuted)),
-          ])),
-          // Next maintenance
-          Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(nextIsOverdue ? 'Overdue!' : 'In ${nextDays}d',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: nextColor)),
-            Text(_fmtDate(machine.nextMaintenance), style: const TextStyle(fontSize: 10, color: _C.textMuted)),
-          ])),
-          // Uptime
-          Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${machine.uptimePercent}%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: machine.uptimePercent >= 90 ? _C.emerald : machine.uptimePercent >= 75 ? _C.amber : _C.rose)),
-            const SizedBox(height: 4),
-            ClipRRect(borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(value: machine.uptimePercent / 100, minHeight: 4,
-                backgroundColor: _C.border,
-                valueColor: AlwaysStoppedAnimation(machine.uptimePercent >= 90 ? _C.emerald : machine.uptimePercent >= 75 ? _C.amber : _C.rose))),
-          ])),
+          Expanded(
+            flex: 1,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(
+                    Icons.edit_rounded,
+                    size: 18,
+                    color: _C.indigo,
+                  ),
+                  onPressed: onEdit,
+                  tooltip: 'Edit machine',
+                ),
+              ),
+            ),
+          ),
         ]),
       ),
     );
@@ -289,7 +367,6 @@ class _WebUsageTabState extends State<_WebUsageTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Which machines have sessions?
     final machinesWithSessions = _machines.where((m) =>
       _usageSessions.any((s) => s.machineId == m.id)).toList();
 
@@ -306,19 +383,14 @@ class _WebUsageTabState extends State<_WebUsageTab> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Weekly chart
         _SharedWeeklyUsageChart(percents: widget.percents, totalMinutes: widget.totalMinutes),
         const SizedBox(height: 24),
-
-        // Per-machine session history
         const Text('Usage History Per Machine',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _C.textPrimary)),
         const SizedBox(height: 4),
         const Text('Select a machine to view session records',
           style: TextStyle(fontSize: 12, color: _C.textSecondary)),
         const SizedBox(height: 12),
-
-        // Machine selector chips
         Wrap(spacing: 8, runSpacing: 8,
           children: machinesWithSessions.map((m) {
             final isSelected = _selectedMachineId == m.id;
@@ -355,7 +427,6 @@ class _WebUsageTabState extends State<_WebUsageTab> {
               ),
             );
           }).toList()),
-
         if (_selectedMachineId != null) ...[
           const SizedBox(height: 20),
           Builder(builder: (_) {
@@ -384,8 +455,6 @@ class _WebUsageTabState extends State<_WebUsageTab> {
             _WebTableBox(child: _SharedUsageSessionTable(sessions: sessions)),
         ] else
           const SizedBox(height: 32),
-
-        // All machines summary
         const SizedBox(height: 24),
         const Text('All Sessions This Week',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.textPrimary)),
@@ -397,7 +466,6 @@ class _WebUsageTabState extends State<_WebUsageTab> {
           if (machineSessions.isEmpty) return const SizedBox.shrink();
           final pct = widget.percents[m.id] ?? 0.0;
           final mins = ((pct / 100) * widget.totalMinutes).round();
-
           return Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -427,7 +495,7 @@ class _WebUsageTabState extends State<_WebUsageTab> {
 }
 
 // ─────────────────────────────────────────────
-//  WEB: SCHEDULE, HISTORY, ISSUES TABS
+//  WEB: SCHEDULE TAB
 // ─────────────────────────────────────────────
 class _WebScheduleTab extends StatelessWidget {
   final List<ScheduledTask> tasks;
@@ -469,19 +537,9 @@ class _WebScheduleTab extends StatelessWidget {
   }
 }
 
-class _WebHistoryTab extends StatelessWidget {
-  final List<MaintenanceLog> logs;
-  const _WebHistoryTab({required this.logs});
-  @override
-  Widget build(BuildContext context) {
-    final sorted = [...logs]..sort((a, b) => b.date.compareTo(a.date));
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
-      child: Column(children: sorted.map((l) => _SharedLogCard(log: l)).toList()),
-    );
-  }
-}
-
+// ─────────────────────────────────────────────
+//  WEB: ISSUES TAB
+// ─────────────────────────────────────────────
 class _WebIssuesTab extends StatelessWidget {
   final List<ReportedIssue> issues;
   const _WebIssuesTab({required this.issues});

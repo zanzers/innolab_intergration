@@ -17,4 +17,16 @@ class MachineRepository {
   Future<void> addMachine(MachineModel machine) async {
     await _db.collection(DatabaseTable.machine).add(machine.toMap());
   }
+
+  Future<void> updateMachine(MachineModel machine) async {
+    await _db
+        .collection(DatabaseTable.machine)
+        .doc(machine.id)
+        .update(machine.toMap());
+  }
+
+  Future<void> deleteMachine(String id) async {
+    await _db.collection(DatabaseTable.machine).doc(id).delete();
+  }
+
 }
