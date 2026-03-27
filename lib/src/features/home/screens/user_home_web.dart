@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:innolab/src/features/core/client/home/screens/user_home_tab.dart';
 import 'package:innolab/src/features/core/client/message/screens/user_message_screen.dart';
 import 'package:innolab/src/features/core/client/quote/screens/user_quote_screen.dart';
 import 'package:innolab/src/features/core/client/request/screens/user_request_screen.dart';
 import 'package:innolab/src/features/core/client/schedule/screens/user_schedule_screen.dart';
+// import 'package:innolab/src/features/core/controller/profileController/profile_controller.dart';
 import 'package:innolab/src/features/home/widgets/user_sidebar.dart';
 
 class UserHomeWeb extends StatefulWidget {
-  const UserHomeWeb({super.key});
- 
+  const UserHomeWeb({super.key, this.userAvatarUrl});
+
+  final String? userAvatarUrl;
+
   @override
   State<UserHomeWeb> createState() => _UserHomeWebState();
 }
- 
+
 class _UserHomeWebState extends State<UserHomeWeb> {
   UserNavItem _selectedItem = UserNavItem.home;
- 
-  final String userName = 'Marcelo';
-  final String? userAvatarUrl = null;
- 
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
- 
+
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -32,13 +35,10 @@ class _UserHomeWebState extends State<UserHomeWeb> {
           children: [
             // ── Top bar ──────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
               ),
               child: Row(
                 children: [
@@ -54,12 +54,15 @@ class _UserHomeWebState extends State<UserHomeWeb> {
                       child: Row(
                         children: [
                           const SizedBox(width: 14),
-                          Icon(Iconsax.search_normal,
-                              size: 18, color: Colors.grey.shade400),
+                          Icon(
+                            Iconsax.search_normal,
+                            size: 18,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(width: 10),
                           Text(
                             'Search something...',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.grey.shade400,
                             ),
                           ),
@@ -67,56 +70,23 @@ class _UserHomeWebState extends State<UserHomeWeb> {
                       ),
                     ),
                   ),
- 
+
                   const SizedBox(width: 20),
- 
+
                   // Bell icon
-                  Icon(Iconsax.notification,
-                      size: 22, color: Colors.grey.shade700),
- 
-                  const SizedBox(width: 20),
- 
-                  // Avatar + Welcome back + name
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.indigo.shade100,
-                        backgroundImage: userAvatarUrl != null
-                            ? NetworkImage(userAvatarUrl!)
-                            : null,
-                        child: userAvatarUrl == null
-                            ? Icon(Iconsax.user,
-                                size: 20, color: Colors.indigo.shade700)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Welcome back',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.grey.shade500,
-                              fontSize: 10,
-                            ),
-                          ),
-                          Text(
-                            userName,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  Icon(
+                    Iconsax.notification,
+                    size: 22,
+                    color: Colors.grey.shade700,
                   ),
+
+                  const SizedBox(width: 20),
+                  // UserHeader(),
+                  
                 ],
               ),
             ),
- 
+
             // ── Sidebar + content ────────────────────────────────────
             Expanded(
               child: Row(
@@ -133,9 +103,7 @@ class _UserHomeWebState extends State<UserHomeWeb> {
                       //   MaterialPageRoute(builder: (_) => const UserLoginScreen()));
                     },
                   ),
-                  Expanded(
-                    child: _buildContent(),
-                  ),
+                  Expanded(child: _buildContent()),
                 ],
               ),
             ),
@@ -144,7 +112,7 @@ class _UserHomeWebState extends State<UserHomeWeb> {
       ),
     );
   }
- 
+
   Widget _buildContent() {
     switch (_selectedItem) {
       case UserNavItem.home:
@@ -166,3 +134,59 @@ class _UserHomeWebState extends State<UserHomeWeb> {
     }
   }
 }
+
+
+
+// class UserHeader extends StatelessWidget {
+//   const UserHeader({
+//     super.key,
+//     this.userAvatarUrl,
+//   });
+
+//   final String? userAvatarUrl;
+
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final profile = Get.find<ProfileController>();
+
+//     return Row(
+//       children: [
+//         CircleAvatar(
+//           radius: 20,
+//           backgroundColor: Colors.indigo.shade100,
+//           backgroundImage: userAvatarUrl != null
+//               ? NetworkImage(userAvatarUrl!)
+//               : null,
+//           child: userAvatarUrl == null
+//               ? Icon(Iconsax.user, size: 20, color: Colors.indigo.shade700)
+//               : null,
+//         ),
+//         const SizedBox(width: 10),
+
+//         Obx(() => Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       Text(
+//                         profile.fullName,
+//                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
+//                           fontWeight: FontWeight.w700, 
+//                           color: Colors.black87,
+//                           fontSize: 12,
+//                         ),
+//                       ),
+//                       Text(
+//                           profile.role.toLowerCase(),
+//                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
+//                             color: Colors.grey.shade500,
+//                             fontSize: 10,
+//                             letterSpacing: 0.5,
+//                           ),
+//                         ),
+//                     ],
+//                   ))
+//       ],
+//     );
+//   }
+// }

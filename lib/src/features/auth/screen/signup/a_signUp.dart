@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:innolab/src/features/auth/models/user_model.dart';
+import 'package:innolab/src/features/models/user_model.dart';
 import 'package:innolab/src/repo/user_repository/user_repository.dart';
 
 class SignUpScreen extends StatelessWidget {
@@ -52,11 +52,10 @@ class SignUpScreen extends StatelessWidget {
                     password: passwordController.text.trim(),
                   );
 
-                  await userCredential.user!.reload(); // ✅ ADD THIS
+                  await userCredential.user!.reload();
 
                   final uid = auth.currentUser!.uid;
 
-                  // ✅ THIS IS ALREADY CORRECT
                   final user = UserModel(
                     id: uid,
                     fullName: fullNameController.text.trim(),

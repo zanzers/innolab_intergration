@@ -4,13 +4,17 @@ import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/route_manager.dart';
 import 'package:get/state_manager.dart';
 import 'package:innolab/src/features/auth/controllers/app_snackBar.dart';
-import 'package:innolab/src/features/auth/models/user_model.dart';
+import 'package:innolab/src/features/models/user_model.dart';
+
+import 'package:innolab/src/repo/auth_repo/db_tableNames.dart';
 import 'package:innolab/src/repo/user_repository/user_repository.dart';
+
 
 class AAuthController extends GetxController {
   static AAuthController get instance => Get.find();
 
   final _auth = FirebaseAuth.instance;
+  final _db = FirebaseFirestore.instance;
   final _userRepo = Get.find<UserRepository>();
 
   Future<void> registerUser({
@@ -32,12 +36,12 @@ class AAuthController extends GetxController {
         fullName: fullName,
         email: email,
         role: 'client',
-        level: 2,
+        level: 1,
       );
 
       await _userRepo.createUser(user);
-
       AppSnackbar.success('Success Accout created successfully');
+
     } on FirebaseAuthException catch (e) {
       throw e.message ?? "Auth error";
     } catch (e) {
@@ -57,7 +61,7 @@ class AAuthController extends GetxController {
 
       final uid = credential.user!.uid;
       final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
+          .collection(DatabaseTable.user)
           .doc(uid)
           .get();
 

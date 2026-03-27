@@ -7,11 +7,24 @@ class ATexts {
   static const String onboardingTitle2 = 'Build Awesome Apps';
   static const String onboardingTitle3 = 'Build Awesome Apps';
 
-  static const String onboardingSubTitle1 = 'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
-  static const String onboardingSubTitle2 = 'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
-  static const String onboardingSubTitle3 = 'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
+  static const String onboardingSubTitle1 =
+      'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
+  static const String onboardingSubTitle2 =
+      'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
+  static const String onboardingSubTitle3 =
+      'Flutter is Google’s mobile app SDK for crafting high-quality native interfaces on iOS and Android in record time.';
 
   // Home
   static const String homeTitle = 'Home Screen';
   static const String homeSubTitle = 'Welcome to the Home Screen';
+
+
+// Inventory
+  static const String cancel = "Cancel";
+  static const String add = "Add";
+
+  static const String addMaterial = "Add new Material";
+  static const String nameMaterial = "Material Name";
+  static const String quantityMaterial = "Quantity";
+  static const String priceMaterial = "Price";
 }

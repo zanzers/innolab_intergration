@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:innolab/src/features/auth/controllers/app_snackBar.dart';
+import 'package:innolab/src/features/auth/controllers/auth_controller.dart';
 import 'package:innolab/src/features/auth/marcelo_login/screens/user_register_screen.dart';
-import 'package:innolab/src/features/home/screens/user_home_screen.dart';
 
 class UserLoginWeb extends StatelessWidget {
   const UserLoginWeb({super.key});
@@ -237,29 +238,17 @@ class _RightPanelState extends State<_RightPanel> {
   Future<void> _onLogin() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _isLoading = true);
+    try {
+      await AAuthController.instance.logInUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-    // TODO: Replace with your actual user authentication logic
-    // e.g., Firebase Auth, API call, etc.
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network call
-
-    setState(() => _isLoading = false);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Login successful'),
-        backgroundColor: Colors.indigo,
-      ),
-    );
-
-    // TODO: Navigate to UserHomeScreen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const UserHomeScreen()),
-    );
+    } catch (e) {
+      AppSnackbar.error(e.toString());
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:innolab/src/features/core/admin/home/screens/home_tab_screen.dart';
 import 'package:innolab/src/features/core/admin/inventory/screens/inventory_screen.dart';
 import 'package:innolab/src/features/core/admin/maintenance/screens/maintenance_screen.dart';
 import 'package:innolab/src/features/core/admin/message/screens/message_screen.dart';
 import 'package:innolab/src/features/core/admin/request/screens/request_screen.dart';
 import 'package:innolab/src/features/core/admin/schedule/screens/schedule_screen.dart';
+import 'package:innolab/src/features/core/admin/staff/screens/admin_add_staff_screen.dart';
 import 'package:innolab/src/features/core/admin/staff/screens/staff_screen.dart';
 import 'package:innolab/src/features/core/admin/user/screens/user_screen.dart';
-
-
 
 enum AdminSection {
   home,
@@ -17,6 +17,7 @@ enum AdminSection {
   request,
   message,
   staff,
+  staffAddUser,
   user,
   inventory,
 }
@@ -30,24 +31,26 @@ class AdminHomeMobile extends StatefulWidget {
 
 class _AdminHomeMobileState extends State<AdminHomeMobile> {
   AdminSection _selectedSection = AdminSection.home;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Bottom nav only shows 4 primary items; the rest live in the drawer.
+  // Bottom nav shows 4 primary items; the rest live in the drawer
   static const _bottomItems = [
     AdminSection.home,
     AdminSection.request,
-    AdminSection.message,
+    AdminSection.inventory,
     AdminSection.maintenance,
   ];
 
   int get _bottomIndex {
     final idx = _bottomItems.indexOf(_selectedSection);
-    return idx < 0 ? 0 : idx; // fallback to 0 when a drawer item is active
+    return idx < 0 ? 0 : idx;
   }
 
   void _select(AdminSection section) {
     setState(() => _selectedSection = section);
-    // Close the drawer if it was open
-    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+    if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -55,75 +58,228 @@ class _AdminHomeMobileState extends State<AdminHomeMobile> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Colors.white,
 
-      // ── App bar ──────────────────────────────────────────────────
-      appBar: AppBar(
+      // ── Drawer ────────────────────────────────────────────────────
+      drawer: Drawer(
+        width: 220,
         backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 0,
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black87),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
+        child: SafeArea(
+          child: _AdminDrawerContent(
+            selected: _selectedSection,
+            onSelect: _select,
           ),
         ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'AMC MIMAROPA',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: Colors.black,
+      ),
+
+      // ── App bar ───────────────────────────────────────────────────
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(108),
+        child: Container(
+          color: Colors.white,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        // Hamburger
+                        IconButton(
+                          icon: const Icon(Icons.menu_rounded,
+                              color: Colors.black87, size: 22),
+                          onPressed: () =>
+                              _scaffoldKey.currentState?.openDrawer(),
+                        ),
+
+                        // Search bar
+                        Expanded(
+                          child: Container(
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(24),
+                              border:
+                                  Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 10),
+                                Icon(Icons.search,
+                                    size: 16,
+                                    color: Colors.grey.shade400),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Search something..',
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Message icon
+                        IconButton(
+                          icon: Icon(Iconsax.message,
+                              size: 20, color: Colors.grey.shade700),
+                          onPressed: () =>
+                              _select(AdminSection.message),
+                        ),
+
+                        // Settings icon
+                        IconButton(
+                          icon: Icon(Iconsax.setting_2,
+                              size: 20, color: Colors.grey.shade700),
+                          onPressed: () {
+                            // TODO: Navigate to settings
+                          },
+                        ),
+
+                        // Avatar + welcome
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.indigo.shade100,
+                              child: Icon(Icons.person,
+                                  size: 18,
+                                  color: Colors.indigo.shade700),
+                            ),
+                            const SizedBox(width: 6),
+                            Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Welcome back',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                                const Text(
+                                  'Marcelo',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _HeaderActionButton(
+                          icon: Iconsax.user_add,
+                          label: 'Add User',
+                          isSelected:
+                              _selectedSection == AdminSection.staffAddUser,
+                          onTap: () => _select(AdminSection.staffAddUser),
+                        ),
+                        const SizedBox(width: 8),
+                        _HeaderActionButton(
+                          icon: Iconsax.calendar_1,
+                          label: 'Schedule',
+                          isSelected:
+                              _selectedSection == AdminSection.schedule,
+                          onTap: () => _select(AdminSection.schedule),
+                        ),
+                        const SizedBox(width: 8),
+                        _HeaderActionButton(
+                          icon: Iconsax.box,
+                          label: 'Inventory',
+                          isSelected:
+                              _selectedSection == AdminSection.inventory,
+                          onTap: () => _select(AdminSection.inventory),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(height: 1, color: Colors.grey.shade200),
+              ],
             ),
-            Container(width: 2, height: 18, color: Colors.redAccent),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black87),
-            onPressed: () {},
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.black87),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 4),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: Colors.grey.shade200),
         ),
       ),
 
-      // ── Drawer (all 8 sections) ───────────────────────────────────
-      drawer: _MobileDrawer(
-        selected: _selectedSection,
-        onSelect: _select,
-      ),
-
-      // ── Body (active section) ────────────────────────────────────
+      // ── Body ──────────────────────────────────────────────────────
       body: _SectionContent(section: _selectedSection),
 
-      // ── Bottom nav (4 primary sections) ─────────────────────────
-      bottomNavigationBar: _MobileBottomNav(
-        selectedIndex: _bottomIndex,
-        onTap: (i) => setState(() => _selectedSection = _bottomItems[i]),
+      // ── Bottom nav ────────────────────────────────────────────────
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _bottomIndex,
+          onTap: (i) => setState(() => _selectedSection = _bottomItems[i]),
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          selectedItemColor: Colors.indigo,
+          unselectedItemColor: Colors.grey.shade500,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_filled),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_outlined),
+              activeIcon: Icon(Icons.assignment),
+              label: 'Request',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined),
+              activeIcon: Icon(Icons.inventory_2),
+              label: 'Inventory',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.build_outlined),
+              activeIcon: Icon(Icons.build),
+              label: 'Maintenance',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Drawer ─────────────────────────────────────────────────────────────────────
+// ── Drawer Content ────────────────────────────────────────────────────────────
 
-class _MobileDrawer extends StatelessWidget {
-  const _MobileDrawer({required this.selected, required this.onSelect});
+class _AdminDrawerContent extends StatelessWidget {
+  const _AdminDrawerContent({
+    required this.selected,
+    required this.onSelect,
+  });
 
   final AdminSection selected;
   final ValueChanged<AdminSection> onSelect;
@@ -132,274 +288,232 @@ class _MobileDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Image.asset(
-                      'assets/logos/admin_logo.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AMCent',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        'Admin Panel',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Logo ───────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(30, 36, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                'assets/logos/admin_logo.png',
+                height: 55,
+                fit: BoxFit.contain,
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'GENERAL',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.grey.shade500,
-                      letterSpacing: 1.5,
-                    ),
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 16, 10, 0),
+                child: Text(
+                  'AMCen Admin',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
                   ),
-                  const SizedBox(height: 6),
-                  Divider(height: 1, color: Colors.grey.shade200),
-                ],
+                ),
               ),
-            ),
-
-            // Nav items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  _DrawerItem(
-                    icon: Icons.home_filled,
-                    label: 'Home',
-                    selected: selected == AdminSection.home,
-                    onTap: () => onSelect(AdminSection.home),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.build_outlined,
-                    label: 'Maintenance',
-                    selected: selected == AdminSection.maintenance,
-                    onTap: () => onSelect(AdminSection.maintenance),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.inventory_2_outlined,
-                    label: 'Inventory',
-                    selected: selected == AdminSection.inventory,
-                    onTap: () => onSelect(AdminSection.inventory),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.assignment_outlined,
-                    label: 'Request',
-                    selected: selected == AdminSection.request,
-                    onTap: () => onSelect(AdminSection.request),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.mail_outline,
-                    label: 'Message',
-                    selected: selected == AdminSection.message,
-                    onTap: () => onSelect(AdminSection.message),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.people_outline,
-                    label: 'Staff',
-                    selected: selected == AdminSection.staff,
-                    onTap: () => onSelect(AdminSection.staff),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.person_outline,
-                    label: 'User',
-                    selected: selected == AdminSection.user,
-                    onTap: () => onSelect(AdminSection.user),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.schedule_outlined,
-                    label: 'Schedule',
-                    selected: selected == AdminSection.schedule,
-                    onTap: () => onSelect(AdminSection.schedule),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // Profile row
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Color(0xFF6C5CE7),
-                    child: Icon(Icons.person, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Marcelo',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          'Administrator',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.logout, size: 20, color: Colors.black54),
-                    tooltip: 'Logout',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+
+        const SizedBox(height: 12),
+
+        // ── Menu label ─────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Menu',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // ── Nav items ──────────────────────────────────────────────
+        _NavItem(
+          icon: Iconsax.home_2,
+          activeIcon: Iconsax.home_25,
+          label: 'Home',
+          isSelected: selected == AdminSection.home,
+          onTap: () => onSelect(AdminSection.home),
+        ),
+        _NavItem(
+          icon: Iconsax.setting,
+          activeIcon: Iconsax.setting5,
+          label: 'Maintenance',
+          isSelected: selected == AdminSection.maintenance,
+          onTap: () => onSelect(AdminSection.maintenance),
+        ),
+        _NavItem(
+          icon: Iconsax.document_download,
+          activeIcon: Iconsax.document_download5,
+          label: 'Request',
+          isSelected: selected == AdminSection.request,
+          onTap: () => onSelect(AdminSection.request),
+        ),
+        _NavItem(
+          icon: Iconsax.people,
+          activeIcon: Iconsax.people5,
+          label: 'Staff',
+          isSelected: selected == AdminSection.staff,
+          onTap: () => onSelect(AdminSection.staff),
+        ),
+        _NavItem(
+          icon: Iconsax.user,
+          activeIcon: Iconsax.user5,
+          label: 'User',
+          isSelected: selected == AdminSection.user,
+          onTap: () => onSelect(AdminSection.user),
+        ),
+
+        const Spacer(),
+
+        // ── Logout ─────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+          child: InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: implement logout
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Iconsax.logout,
+                      size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Logout',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _DrawerItem extends StatelessWidget {
-  const _DrawerItem({
+// ── Nav Item ──────────────────────────────────────────────────────────────────
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
     required this.icon,
+    required this.activeIcon,
     required this.label,
-    this.selected = false,
-    this.onTap,
+    required this.isSelected,
+    required this.onTap,
   });
 
   final IconData icon;
+  final IconData activeIcon;
   final String label;
-  final bool selected;
-  final VoidCallback? onTap;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFE7EBFF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected ? Colors.indigo : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 14),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: selected ? Colors.indigo : Colors.grey.shade800,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.indigo : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.grey.shade500,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color:
+                      isSelected ? Colors.white : Colors.grey.shade600,
+                  fontWeight: isSelected
+                      ? FontWeight.w600
+                      : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Bottom Navigation Bar ──────────────────────────────────────────────────────
-
-class _MobileBottomNav extends StatelessWidget {
-  const _MobileBottomNav({
-    required this.selectedIndex,
+class _HeaderActionButton extends StatelessWidget {
+  const _HeaderActionButton({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
     required this.onTap,
   });
 
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200, width: 1),
-        ),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: selectedIndex,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey.shade500,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.indigo : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected ? Colors.indigo : Colors.grey.shade300,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Request',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mail_outline),
-            activeIcon: Icon(Icons.mail),
-            label: 'Message',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build_outlined),
-            activeIcon: Icon(Icons.build),
-            label: 'Maintenance',
-          ),
-        ],
       ),
     );
   }
@@ -424,6 +538,8 @@ class _SectionContent extends StatelessWidget {
         return const MessageScreen();
       case AdminSection.staff:
         return const StaffScreen();
+      case AdminSection.staffAddUser:
+        return const AdminAddStaffScreen();
       case AdminSection.user:
         return const UserScreen();
       case AdminSection.schedule:
