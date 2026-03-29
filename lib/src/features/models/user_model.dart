@@ -22,7 +22,7 @@ class UserModel {
       'fullName': fullName,
       'email': email,
       'role': role,
-      'level': 1,
+      'level': level ?? 1,
     };
   }
 

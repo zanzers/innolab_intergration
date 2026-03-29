@@ -9,15 +9,32 @@ class _MobileQuoteView extends StatefulWidget {
   State<_MobileQuoteView> createState() => _MobileQuoteViewState();
 }
 
-class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixin {
+class _MobileQuoteViewState extends State<_MobileQuoteView>
+    with _QuoteStateMixin {
   int _expandedSection = 0; // 0 = file, 1 = printer, 2 = material
   bool _isSummaryExpanded = false;
   final _scrollCtrl = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    loadQuoteCatalog();
+  }
+
+  @override
   void dispose() {
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void _resetForm() {
+    // Call parent to reset form state
+    super._resetForm();
+    // Collapse the summary panel on mobile
+    setState(() {
+      _isSummaryExpanded = false;
+    });
   }
 
   @override
@@ -51,48 +68,48 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
   }
 
   PreferredSizeWidget _buildAppBar() => AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        titleSpacing: 16,
-        title: Row(
+    backgroundColor: Colors.white,
+    elevation: 0,
+    titleSpacing: 16,
+    title: Row(
+      children: [
+        Container(
+          width: 4,
+          height: 22,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_kPrimary, _kPrimaryDark],
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 4,
-              height: 22,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [_kPrimary, _kPrimaryDark],
-                ),
-                borderRadius: BorderRadius.circular(4),
+            Text(
+              'Get a Quote',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A1D23),
               ),
             ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Get a Quote',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1D23),
-                  ),
-                ),
-                Text(
-                  '3D Print Request',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                ),
-              ],
+            Text(
+              '3D Print Request',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             ),
           ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: Colors.grey.shade200),
-        ),
-      );
+      ],
+    ),
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(1),
+      child: Container(height: 1, color: Colors.grey.shade200),
+    ),
+  );
 
   Widget _buildProgressStrip() {
     final s1 = selectedFileName != null;
@@ -172,8 +189,8 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
           color: isDone
               ? _kPrimary.withOpacity(0.25)
               : isExpanded
-                  ? _kPrimary.withOpacity(0.2)
-                  : Colors.grey.shade200,
+              ? _kPrimary.withOpacity(0.2)
+              : Colors.grey.shade200,
           width: isDone || isExpanded ? 1.5 : 1,
         ),
         boxShadow: [
@@ -207,8 +224,8 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
               color: isDone
                   ? _kPrimary
                   : isExpanded
-                      ? _kPrimaryLight
-                      : Colors.grey.shade100,
+                  ? _kPrimaryLight
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(
@@ -217,8 +234,8 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
               color: isDone
                   ? Colors.white
                   : isExpanded
-                      ? _kPrimary
-                      : Colors.grey.shade500,
+                  ? _kPrimary
+                  : Colors.grey.shade500,
             ),
           ),
           title: Text(
@@ -238,7 +255,10 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
               : null,
           trailing: isDone && !isExpanded
               ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(20),
@@ -246,7 +266,11 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, size: 12, color: Color(0xFF10B981)),
+                      Icon(
+                        Icons.check_circle,
+                        size: 12,
+                        color: Color(0xFF10B981),
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Done',
@@ -260,7 +284,9 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   ),
                 )
               : Icon(
-                  isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                  isExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
                   size: 20,
                   color: Colors.grey.shade400,
                 ),
@@ -273,7 +299,10 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
   void _scrollToSection(int index) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
-        final offset = (index * 250.0).clamp(0.0, _scrollCtrl.position.maxScrollExtent);
+        final offset = (index * 250.0).clamp(
+          0.0,
+          _scrollCtrl.position.maxScrollExtent,
+        );
         _scrollCtrl.animateTo(
           offset,
           duration: const Duration(milliseconds: 300),
@@ -294,9 +323,13 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 26),
             decoration: BoxDecoration(
-              color: selectedFileName != null ? _kPrimaryLight.withOpacity(0.5) : Colors.grey.shade50,
+              color: selectedFileName != null
+                  ? _kPrimaryLight.withOpacity(0.5)
+                  : Colors.grey.shade50,
               border: Border.all(
-                color: selectedFileName != null ? _kPrimary.withOpacity(0.4) : Colors.grey.shade300,
+                color: selectedFileName != null
+                    ? _kPrimary.withOpacity(0.4)
+                    : Colors.grey.shade300,
                 width: 1.5,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -307,13 +340,19 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: selectedFileName != null ? _kPrimary.withOpacity(0.12) : Colors.grey.shade100,
+                    color: selectedFileName != null
+                        ? _kPrimary.withOpacity(0.12)
+                        : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    selectedFileName != null ? Iconsax.document_text : Iconsax.document_upload,
+                    selectedFileName != null
+                        ? Iconsax.document_text
+                        : Iconsax.document_upload,
                     size: 22,
-                    color: selectedFileName != null ? _kPrimary : Colors.grey.shade400,
+                    color: selectedFileName != null
+                        ? _kPrimary
+                        : Colors.grey.shade400,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -321,8 +360,12 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   selectedFileName ?? 'Tap to upload your 3D file',
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: selectedFileName != null ? FontWeight.w600 : FontWeight.normal,
-                    color: selectedFileName != null ? _kPrimaryDark : Colors.grey.shade500,
+                    fontWeight: selectedFileName != null
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: selectedFileName != null
+                        ? _kPrimaryDark
+                        : Colors.grey.shade500,
                   ),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
@@ -331,14 +374,24 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 ElevatedButton.icon(
                   onPressed: pickFile,
                   icon: const Icon(Iconsax.folder_open, size: 15),
-                  label: Text(selectedFileName != null ? 'Change File' : 'Browse Files'),
+                  label: Text(
+                    selectedFileName != null ? 'Change File' : 'Browse Files',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kPrimary,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 11,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -346,12 +399,16 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(spacing: 7, runSpacing: 7, children: [
-          _FmtChip(ext: 'STL', color: _kPrimary),
-          _FmtChip(ext: 'OBJ', color: const Color(0xFF1E88E5)),
-          _FmtChip(ext: '3MF', color: const Color(0xFF43A047)),
-          _FmtChip(ext: 'ZIP', color: const Color(0xFFFF8F00)),
-        ]),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: [
+            _FmtChip(ext: 'STL', color: _kPrimary),
+            _FmtChip(ext: 'OBJ', color: const Color(0xFF1E88E5)),
+            _FmtChip(ext: '3MF', color: const Color(0xFF43A047)),
+            _FmtChip(ext: 'ZIP', color: const Color(0xFFFF8F00)),
+          ],
+        ),
         if (selectedFileName != null) ...[
           const SizedBox(height: 12),
           Container(
@@ -380,7 +437,8 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   _ModelInfoChip(
                     icon: Iconsax.maximize_3,
                     label: 'Size',
-                    value: '${modelWidth!.toInt()}×${modelDepth!.toInt()}×${modelHeight!.toInt()} mm',
+                    value:
+                        '${modelWidth!.toInt()}×${modelDepth!.toInt()}×${modelHeight!.toInt()} mm',
                   ),
               ],
             ),
@@ -397,8 +455,13 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),
@@ -415,7 +478,11 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Iconsax.warning_2, color: Color(0xFFE53935), size: 16),
+                const Icon(
+                  Iconsax.warning_2,
+                  color: Color(0xFFE53935),
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -467,8 +534,13 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),
@@ -490,19 +562,19 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 label: 'All',
                 icon: Iconsax.grid_1,
                 color: Colors.grey.shade600,
-                isSelected: selectedCategory == null,
-                onTap: () => setState(() => selectedCategory = null),
+                isSelected: selectedCategoryKey == null,
+                onTap: () => setState(() => selectedCategoryKey = null),
               ),
               const SizedBox(width: 8),
-              ..._kMaterialCategories.map(
+              ...materialCategories.map(
                 (info) => Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _CategoryChip(
                     label: info.name,
                     icon: info.icon,
                     color: info.color,
-                    isSelected: selectedCategory == info.category,
-                    onTap: () => setState(() => selectedCategory = info.category),
+                    isSelected: selectedCategoryKey == info.key,
+                    onTap: () => setState(() => selectedCategoryKey = info.key),
                   ),
                 ),
               ),
@@ -519,7 +591,10 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 children: [
                   Icon(Iconsax.box, size: 40, color: Colors.grey.shade300),
                   const SizedBox(height: 10),
-                  Text('No materials in this category', style: TextStyle(color: Colors.grey.shade500)),
+                  Text(
+                    'No materials in this category',
+                    style: TextStyle(color: Colors.grey.shade500),
+                  ),
                 ],
               ),
             ),
@@ -532,7 +607,7 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 material: m,
                 categoryColor: _QuoteStateMixin.categoryColor(m.category),
                 categoryIcon: _QuoteStateMixin.categoryIcon(m.category),
-                categoryName: _QuoteStateMixin.categoryName(m.category),
+                categoryName: m.categoryLabel,
                 isSelected: currentItem?.material.id == m.id,
                 onAdd: () => setState(() {
                   selectMaterial(m);
@@ -604,8 +679,10 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
               ),
             ),
             const SizedBox(height: 12),
-            if (!_isSummaryExpanded) _buildCollapsedState(total)
-            else _buildExpandedState(canSubmit),
+            if (!_isSummaryExpanded)
+              _buildCollapsedState(total)
+            else
+              _buildExpandedState(canSubmit),
           ],
         ),
       ),
@@ -633,11 +710,7 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
           ],
         ),
         const Spacer(),
-        Icon(
-          Icons.keyboard_arrow_up_rounded,
-          color: _kPrimary,
-          size: 28,
-        ),
+        Icon(Icons.keyboard_arrow_up_rounded, color: _kPrimary, size: 28),
         const SizedBox(width: 4),
         Text(
           'Details',
@@ -675,8 +748,14 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   onSelected: (s) => s ? updateFinish(f) : null,
                   backgroundColor: Colors.white,
                   selectedColor: _kPrimary,
-                  side: BorderSide(color: sel ? _kPrimary : Colors.grey.shade300, width: 1.5),
-                  labelStyle: TextStyle(color: sel ? Colors.white : Colors.black87, fontSize: 12),
+                  side: BorderSide(
+                    color: sel ? _kPrimary : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                  labelStyle: TextStyle(
+                    color: sel ? Colors.white : Colors.black87,
+                    fontSize: 12,
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               }).toList(),
@@ -697,8 +776,14 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   onSelected: (s) => s ? updateTolerance(t) : null,
                   backgroundColor: Colors.white,
                   selectedColor: _kPrimary,
-                  side: BorderSide(color: sel ? _kPrimary : Colors.grey.shade300, width: 1.5),
-                  labelStyle: TextStyle(color: sel ? Colors.white : Colors.black87, fontSize: 12),
+                  side: BorderSide(
+                    color: sel ? _kPrimary : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                  labelStyle: TextStyle(
+                    color: sel ? Colors.white : Colors.black87,
+                    fontSize: 12,
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               }).toList(),
@@ -722,8 +807,14 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 onSelected: (s) => s ? updateLayer(l) : null,
                 backgroundColor: Colors.white,
                 selectedColor: _kPrimary,
-                side: BorderSide(color: sel ? _kPrimary : Colors.grey.shade300, width: 1.5),
-                labelStyle: TextStyle(color: sel ? Colors.white : Colors.black87, fontSize: 12),
+                side: BorderSide(
+                  color: sel ? _kPrimary : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+                labelStyle: TextStyle(
+                  color: sel ? Colors.white : Colors.black87,
+                  fontSize: 12,
+                ),
                 visualDensity: VisualDensity.compact,
               );
             }).toList(),
@@ -789,7 +880,8 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
         ),
 
         // Printer notice if not available
-        if (selectedPrinter != null && selectedPrinter!.status != PrinterStatus.available) ...[
+        if (selectedPrinter != null &&
+            selectedPrinter!.status != PrinterStatus.available) ...[
           const SizedBox(height: 12),
           _buildPrinterNotice(),
         ],
@@ -834,15 +926,23 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   ),
                 ),
                 Text(
-                  _QuoteStateMixin.categoryName(currentItem!.material.category),
-                  style: TextStyle(fontSize: 11, color: cc, fontWeight: FontWeight.w600),
+                  currentItem!.material.categoryLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cc,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
           Text(
             '₱${currentItem!.material.hourlyRate.toStringAsFixed(0)}/hr',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kPrimary),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _kPrimary,
+            ),
           ),
         ],
       ),
@@ -859,7 +959,11 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
             const SizedBox(width: 6),
             const Text(
               'Quantity',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1D23)),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1D23),
+              ),
             ),
           ],
         ),
@@ -877,7 +981,11 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 alignment: Alignment.center,
                 child: Text(
                   '$quantity',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1D23)),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1D23),
+                  ),
                 ),
               ),
               _QtyButton(icon: Iconsax.add, onTap: increaseQty),
@@ -891,7 +999,9 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
   Widget _buildCostBreakdown() {
     if (currentItem == null) return const SizedBox.shrink();
     final matCost = currentItem!.materialCost;
-    final machCost = currentItem!.hours * (selectedPrinter?.hourlyRate ?? currentItem!.material.hourlyRate);
+    final machCost =
+        currentItem!.hours *
+        (selectedPrinter?.hourlyRate ?? currentItem!.material.hourlyRate);
     final elecCost = currentItem!.hours * 5.0;
     final svcFee = matCost * 0.15;
     final sub1 = matCost + machCost + elecCost + svcFee;
@@ -907,19 +1017,41 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
         children: [
           _CostRow(label: 'Material', value: '₱${matCost.toStringAsFixed(2)}'),
           const SizedBox(height: 6),
-          _CostRow(label: 'Machine Time', value: '₱${machCost.toStringAsFixed(2)}'),
+          _CostRow(
+            label: 'Machine Time',
+            value: '₱${machCost.toStringAsFixed(2)}',
+          ),
           const SizedBox(height: 6),
-          _CostRow(label: 'Electricity', value: '₱${elecCost.toStringAsFixed(2)}'),
+          _CostRow(
+            label: 'Electricity',
+            value: '₱${elecCost.toStringAsFixed(2)}',
+          ),
           const SizedBox(height: 6),
-          _CostRow(label: 'Service Fee (15%)', value: '₱${svcFee.toStringAsFixed(2)}'),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Divider(height: 1)),
-          _CostRow(label: 'Subtotal (1 unit)', value: '₱${sub1.toStringAsFixed(2)}', bold: true),
+          _CostRow(
+            label: 'Service Fee (15%)',
+            value: '₱${svcFee.toStringAsFixed(2)}',
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1),
+          ),
+          _CostRow(
+            label: 'Subtotal (1 unit)',
+            value: '₱${sub1.toStringAsFixed(2)}',
+            bold: true,
+          ),
           if (quantity > 1) ...[
             const SizedBox(height: 6),
-            _CostRow(label: 'Subtotal ($quantity units)', value: '₱${(sub1 * quantity).toStringAsFixed(2)}'),
+            _CostRow(
+              label: 'Subtotal ($quantity units)',
+              value: '₱${(sub1 * quantity).toStringAsFixed(2)}',
+            ),
           ],
           if (selectedDiscountType != null) ...[
-            const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1)),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
             _CostRow(
               label: 'Discount ($selectedDiscountType 10%)',
               value: '-₱${discountAmount.toStringAsFixed(2)}',
@@ -930,7 +1062,9 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF5C6BC0), Color(0xFF7986CB)]),
+              gradient: LinearGradient(
+                colors: [Color(0xFF5C6BC0), Color(0xFF7986CB)],
+              ),
               borderRadius: BorderRadius.all(Radius.circular(10)),
             ),
             child: Row(
@@ -947,7 +1081,11 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                 ),
                 Text(
                   '₱${grandTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Colors.white),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -967,10 +1105,17 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
             const SizedBox(width: 7),
             const Text(
               'DISCOUNTS',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1D23)),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1D23),
+              ),
             ),
             const Expanded(child: SizedBox()),
-            Text('10% off', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(
+              '10% off',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -982,10 +1127,14 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
             return ChoiceChip(
               label: Text(type),
               selected: isSel,
-              onSelected: (s) => setState(() => selectedDiscountType = s ? type : null),
+              onSelected: (s) =>
+                  setState(() => selectedDiscountType = s ? type : null),
               backgroundColor: Colors.grey.shade100,
               selectedColor: _kPrimary,
-              labelStyle: TextStyle(color: isSel ? Colors.white : Colors.black87, fontSize: 12),
+              labelStyle: TextStyle(
+                color: isSel ? Colors.white : Colors.black87,
+                fontSize: 12,
+              ),
               visualDensity: VisualDensity.compact,
             );
           }).toList(),
@@ -1007,19 +1156,31 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(selectedDiscountType!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text(
+                        selectedDiscountType!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                       Text(
                         uploadedIdName ?? 'ID required — tap to upload',
                         style: TextStyle(
                           fontSize: 11,
-                          color: uploadedIdName != null ? const Color(0xFF43A047) : Colors.grey.shade500,
+                          color: uploadedIdName != null
+                              ? const Color(0xFF43A047)
+                              : Colors.grey.shade500,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Iconsax.document_upload, color: _kPrimary, size: 18),
+                  icon: Icon(
+                    Iconsax.document_upload,
+                    color: _kPrimary,
+                    size: 18,
+                  ),
                   onPressed: pickIdFile,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -1057,12 +1218,20 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
               children: [
                 Text(
                   'Pay at Admin Office',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF1A1D23)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Color(0xFF1A1D23),
+                  ),
                 ),
                 SizedBox(height: 3),
                 Text(
                   'Payment at admin office during scheduled appointment.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF6B7280), height: 1.4),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF6B7280),
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -1080,23 +1249,6 @@ class _MobileQuoteViewState extends State<_MobileQuoteView> with _QuoteStateMixi
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFFFE082)),
       ),
-      child: Row(
-        children: [
-          const Icon(Iconsax.clock, color: Color(0xFFFFB300), size: 15),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Printer ${selectedPrinter!.status == PrinterStatus.busy ? 'is busy' : 'under maintenance'}. Available: ${selectedPrinter!.nextAvailable}',
-              style: const TextStyle(
-                color: Color(0xFF795500),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1106,17 +1258,21 @@ class _MobilePrinterCard extends StatelessWidget {
   final PrinterModel printer;
   final bool isSelected;
   final VoidCallback onTap;
-  const _MobilePrinterCard({required this.printer, required this.isSelected, required this.onTap});
+  const _MobilePrinterCard({
+    required this.printer,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   Color get _sc => switch (printer.status) {
-    PrinterStatus.available         => const Color(0xFF43A047),
-    PrinterStatus.busy              => const Color(0xFFFFB300),
-    PrinterStatus.underMaintenance  => const Color(0xFFE53935),
+    PrinterStatus.available => const Color(0xFF43A047),
+    PrinterStatus.busy => const Color(0xFFFFB300),
+    PrinterStatus.underMaintenance => const Color(0xFFE53935),
   };
   String get _sl => switch (printer.status) {
-    PrinterStatus.available         => 'Available',
-    PrinterStatus.busy              => 'Busy',
-    PrinterStatus.underMaintenance  => 'Maintenance',
+    PrinterStatus.available => 'Available',
+    PrinterStatus.busy => 'Busy',
+    PrinterStatus.underMaintenance => 'Maintenance',
   };
 
   @override
@@ -1135,7 +1291,9 @@ class _MobilePrinterCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: isSelected ? _kPrimary.withOpacity(0.1) : Colors.black.withOpacity(0.03),
+            color: isSelected
+                ? _kPrimary.withOpacity(0.1)
+                : Colors.black.withOpacity(0.03),
             blurRadius: isSelected ? 14 : 6,
             offset: const Offset(0, 3),
           ),
@@ -1146,10 +1304,16 @@ class _MobilePrinterCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: isSelected ? _kPrimary.withOpacity(0.15) : Colors.grey.shade100,
+              color: isSelected
+                  ? _kPrimary.withOpacity(0.15)
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Iconsax.cpu, size: 18, color: isSelected ? _kPrimary : Colors.grey.shade600),
+            child: Icon(
+              Iconsax.cpu,
+              size: 18,
+              color: isSelected ? _kPrimary : Colors.grey.shade600,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1172,7 +1336,11 @@ class _MobilePrinterCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Icon(Iconsax.flash_1, size: 11, color: isSelected ? _kPrimary : Colors.grey.shade400),
+                    Icon(
+                      Iconsax.flash_1,
+                      size: 11,
+                      color: isSelected ? _kPrimary : Colors.grey.shade400,
+                    ),
                     const SizedBox(width: 3),
                     Text(
                       '${printer.speedFactor}x · ₱${printer.hourlyRate.toStringAsFixed(0)}/hr',
@@ -1193,13 +1361,30 @@ class _MobilePrinterCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: _sc.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                  color: _sc.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(width: 6, height: 6, decoration: BoxDecoration(color: _sc, shape: BoxShape.circle)),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _sc,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     const SizedBox(width: 4),
-                    Text(_sl, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _sc)),
+                    Text(
+                      _sl,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _sc,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1209,7 +1394,14 @@ class _MobilePrinterCard extends StatelessWidget {
                   children: [
                     Icon(Icons.check_circle, size: 14, color: _kPrimary),
                     SizedBox(width: 4),
-                    Text('Selected', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kPrimary)),
+                    Text(
+                      'Selected',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _kPrimary,
+                      ),
+                    ),
                   ],
                 ),
               ],

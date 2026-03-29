@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:innolab/src/common/loader/app_loader.dart';
+import 'package:innolab/src/features/core/admin/schedule/schedule_controller/schedule_controller.dart';
 import 'package:innolab/src/features/core/admin/user/screens/App_schedule_store.dart';
+import 'package:innolab/src/features/models/schedule_model.dart';
+import 'package:innolab/utils/constant/enums.dart';
 
 part 'schedule_screen_web.dart';
 part 'schedule_screen_mobile.dart';
@@ -32,195 +37,8 @@ class _C {
 }
 
 // ─────────────────────────────────────────────
-//  ENUMS & MODELS  (shared)
+//  FORM DROPDOWN OPTIONS  (shared)
 // ─────────────────────────────────────────────
-enum EventType { requestApproval, maintenance, meeting, machineUsage, adminTask }
-enum EventStatus { pending, inProgress, completed, canceled, approved, rejected }
-
-class ScheduleEvent {
-  final String id;
-  final String title;
-  final String description;
-  final EventType type;
-  EventStatus status;
-  final DateTime startTime;
-  final DateTime endTime;
-  final String? assignedStaff;
-  final String? relatedUser;
-  final String? machine;
-  final String? location;
-  final String? linkedId;
-  bool isAdminTask;
-  final bool isEditable;
-
-  ScheduleEvent({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.type,
-    required this.status,
-    required this.startTime,
-    required this.endTime,
-    this.assignedStaff,
-    this.relatedUser,
-    this.machine,
-    this.location,
-    this.linkedId,
-    this.isAdminTask = false,
-    this.isEditable = true,
-  });
-
-  ScheduleEvent copyWith({
-    String? title,
-    String? description,
-    EventType? type,
-    EventStatus? status,
-    DateTime? startTime,
-    DateTime? endTime,
-    String? assignedStaff,
-    String? relatedUser,
-    String? machine,
-    String? location,
-  }) {
-    return ScheduleEvent(
-      id: id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      type: type ?? this.type,
-      status: status ?? this.status,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      assignedStaff: assignedStaff ?? this.assignedStaff,
-      relatedUser: relatedUser ?? this.relatedUser,
-      machine: machine ?? this.machine,
-      location: location ?? this.location,
-      linkedId: linkedId,
-      isAdminTask: isAdminTask,
-      isEditable: isEditable,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  SAMPLE DATA  (shared)
-// ─────────────────────────────────────────────
-final _now = DateTime.now();
-
-List<ScheduleEvent> _buildSampleEvents() => [
-  ScheduleEvent(
-    id: 'EVT-001', title: 'Approve REQ-001 — Mounting Bracket',
-    description: 'John Doe submitted a PLA black bracket print request. File verified. Awaiting admin approval.',
-    type: EventType.requestApproval, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day, 9, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 9, 30),
-    relatedUser: 'John Doe', machine: 'Bambu X1 Carbon', location: 'Bay A1',
-    linkedId: 'REQ-001', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-002', title: 'Weekly Staff Meeting',
-    description: 'Weekly sync with all lab staff. Review print queue, machine status, and pending requests.',
-    type: EventType.meeting, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day, 10, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 11, 0),
-    assignedStaff: 'All Staff', location: 'Conference Room 1', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-003', title: 'Creality K1 Max Maintenance',
-    description: 'Scheduled corrective maintenance — extruder nozzle replacement and calibration.',
-    type: EventType.maintenance, status: EventStatus.inProgress,
-    startTime: DateTime(_now.year, _now.month, _now.day, 11, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 14, 0),
-    assignedStaff: 'David Chen', machine: 'Creality K1 Max', location: 'Bay A3',
-    linkedId: 'MCH-003',
-  ),
-  ScheduleEvent(
-    id: 'EVT-004', title: 'Approve REQ-004 — Display Stand',
-    description: 'Emily Davis request for a PLA white display stand with logo. Marketing dept.',
-    type: EventType.requestApproval, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day, 14, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 14, 30),
-    relatedUser: 'Emily Davis', machine: 'Bambu P1S', location: 'Bay A4',
-    linkedId: 'REQ-004', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-005', title: 'Voron 2.4 R2 — Print Run JOB-891',
-    description: 'Extended print session for phone stand batch. Sarah Wilson operating.',
-    type: EventType.machineUsage, status: EventStatus.inProgress,
-    startTime: DateTime(_now.year, _now.month, _now.day, 9, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 17, 0),
-    assignedStaff: 'Sarah Wilson', machine: 'Voron 2.4 R2', location: 'Bay B1',
-    linkedId: 'JOB-891',
-  ),
-  ScheduleEvent(
-    id: 'EVT-006', title: 'Sign Completion Report — REQ-009',
-    description: 'PETG enclosure lid completed for Jane Smith. Admin to sign completion confirmation.',
-    type: EventType.adminTask, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day, 16, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day, 16, 30),
-    relatedUser: 'Jane Smith', linkedId: 'REQ-009', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-007', title: 'Sinterit Lisa Pro — Laser Module Repair',
-    description: 'Parts arrived. Full laser module replacement scheduled with David Chen.',
-    type: EventType.maintenance, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 1, 8, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day + 1, 14, 0),
-    assignedStaff: 'David Chen', machine: 'Sinterit Lisa Pro', location: 'Vault C2',
-    linkedId: 'MCH-006',
-  ),
-  ScheduleEvent(
-    id: 'EVT-008', title: 'Approve REQ-002 — Phone Case Prototype',
-    description: 'Jane Smith TPU blue phone case prototype. Enterprise user — high priority.',
-    type: EventType.requestApproval, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 1, 9, 30),
-    endTime: DateTime(_now.year, _now.month, _now.day + 1, 10, 0),
-    relatedUser: 'Jane Smith', machine: 'Bambu X1 Carbon', location: 'Bay A1',
-    linkedId: 'REQ-002', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-009', title: 'Inventory Restock Check',
-    description: 'Monthly inventory audit. Check low stock items: PLA Black, PETG Clear, TPU Blue.',
-    type: EventType.adminTask, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 1, 14, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day + 1, 15, 0),
-    location: 'Storage Room', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-010', title: 'Bambu X1 Carbon — Nozzle Inspection',
-    description: 'Preventive maintenance: AMS cleaning and hardened nozzle wear check.',
-    type: EventType.maintenance, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 9, 10, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day + 9, 11, 0),
-    assignedStaff: 'Mike Johnson', machine: 'Bambu X1 Carbon', location: 'Bay A1',
-    linkedId: 'MCH-001',
-  ),
-  ScheduleEvent(
-    id: 'EVT-011', title: 'Vendor Meeting — Bambu Lab PH',
-    description: 'Quarterly review with Bambu Lab Philippines. Discuss filament pricing and new X1E model.',
-    type: EventType.meeting, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 3, 14, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day + 3, 16, 0),
-    location: 'Conference Room 1', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-012', title: 'Monthly Performance Review',
-    description: 'Review all staff KPIs, machine utilization rates, and request turnaround times.',
-    type: EventType.adminTask, status: EventStatus.pending,
-    startTime: DateTime(_now.year, _now.month, _now.day + 5, 9, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day + 5, 11, 0),
-    assignedStaff: 'All Staff', location: 'Conference Room 1', isAdminTask: true,
-  ),
-  ScheduleEvent(
-    id: 'EVT-013', title: 'REQ-005 Approved — Drone Frame Print',
-    description: 'Michael Lee\'s Carbon PLA drone frame approved. Scheduled for Voron 2.4.',
-    type: EventType.machineUsage, status: EventStatus.completed,
-    startTime: DateTime(_now.year, _now.month, _now.day - 1, 9, 0),
-    endTime: DateTime(_now.year, _now.month, _now.day - 1, 17, 0),
-    assignedStaff: 'Sarah Wilson', machine: 'Voron 2.4 R2', location: 'Bay B1',
-    linkedId: 'REQ-005',
-  ),
-];
-
 const _staffList = [
   'Mike Johnson', 'Sarah Wilson', 'David Chen',
   'Lisa Garcia', 'Nina Patel', 'Alex Turner',
@@ -259,7 +77,15 @@ class ScheduleScreen extends StatelessWidget {
 //  SHARED STATE MIXIN  (used by both layouts)
 // ─────────────────────────────────────────────
 mixin _ScheduleStateMixin<T extends StatefulWidget> on State<T> {
-  late List<ScheduleEvent> events;
+  ScheduleController get _scheduleController {
+    if (!Get.isRegistered<ScheduleController>()) {
+      Get.put(ScheduleController());
+    }
+    return ScheduleController.instance;
+  }
+
+  List<ScheduleEvent> get events => _scheduleController.events;
+
   DateTime focusedDay = DateTime.now();
   DateTime selectedDay = DateTime.now();
 
@@ -270,8 +96,10 @@ mixin _ScheduleStateMixin<T extends StatefulWidget> on State<T> {
 
   @override
   void initState() {
+    if (!Get.isRegistered<ScheduleController>()) {
+      Get.put(ScheduleController());
+    }
     super.initState();
-    events = _buildSampleEvents();
   }
 
   List<ScheduleEvent> get filteredEvents {
@@ -302,60 +130,71 @@ mixin _ScheduleStateMixin<T extends StatefulWidget> on State<T> {
       events.where((e) => e.isAdminTask && e.status == EventStatus.pending).length;
   int get pendingApprovals =>
       events.where((e) => e.type == EventType.requestApproval && e.status == EventStatus.pending).length;
-  int get todayEventCount => eventsForDay(_now).length;
+  int get todayEventCount => eventsForDay(DateTime.now()).length;
   int get inProgressCount =>
       events.where((e) => e.status == EventStatus.inProgress).length;
 
-  void handleQuickAction(ScheduleEvent event, String action) {
-    setState(() {
-      final idx = events.indexWhere((e) => e.id == event.id);
-      if (idx == -1) return;
-      if (action == 'approve') events[idx].status = EventStatus.approved;
-      if (action == 'reject')  events[idx].status = EventStatus.rejected;
-      if (action == 'complete') events[idx].status = EventStatus.completed;
-    });
+  Future<void> handleQuickAction(ScheduleEvent event, String action) async {
+    EventStatus? newStatus;
+    if (action == 'approve') newStatus = EventStatus.approved;
+    if (action == 'reject') newStatus = EventStatus.rejected;
+    if (action == 'complete') newStatus = EventStatus.completed;
+    if (newStatus == null) return;
+    final updated = event.copyWith(status: newStatus);
+    await _scheduleController.updateEvent(updated);
   }
 
-  void handleStatusChange(ScheduleEvent event, EventStatus status) {
-    setState(() {
-      final idx = events.indexWhere((e) => e.id == event.id);
-      if (idx != -1) events[idx].status = status;
-      if (event.type == EventType.maintenance) {
-        AppScheduleStore.instance.updateStatus(event.id, _toSharedStatus(status));
-      }
-    });
+  Future<void> handleStatusChange(ScheduleEvent event, EventStatus status) async {
+    final updated = event.copyWith(status: status);
+    await _scheduleController.updateEvent(updated);
+    if (event.type == EventType.maintenance) {
+      AppScheduleStore.instance.updateStatus(event.id, _toSharedStatus(status));
+    }
   }
 
-  void handleDelete(ScheduleEvent event) {
+  Future<void> handleDelete(ScheduleEvent event) async {
     if (event.type == EventType.maintenance) {
       AppScheduleStore.instance.removeById(event.id);
     }
-    setState(() => events.removeWhere((e) => e.id == event.id));
+    await _scheduleController.deleteEvent(event.id);
   }
 
-  void handleSave(ScheduleEvent newEvent, ScheduleEvent? existing) {
-    setState(() {
-      if (existing != null) {
-        final idx = events.indexWhere((e) => e.id == existing.id);
-        if (idx != -1) events[idx] = newEvent;
-      } else {
-        events.add(newEvent);
+  Future<String?> handleSave(ScheduleEvent newEvent, ScheduleEvent? existing) async {
+    if (existing != null) {
+      await _scheduleController.updateEvent(newEvent);
+      if (newEvent.type == EventType.maintenance) {
+        AppScheduleStore.instance.addOrUpdateFromSchedule(SharedMaintenanceTask(
+          id: newEvent.id,
+          title: newEvent.title,
+          notes: newEvent.description,
+          assignedTo: newEvent.assignedStaff ?? 'Unassigned',
+          machineName: newEvent.machine ?? 'N/A',
+          machineId: newEvent.linkedId ?? newEvent.id,
+          scheduledDate: newEvent.startTime,
+          endDate: newEvent.endTime,
+          status: _toSharedStatus(newEvent.status),
+          estimatedDuration: newEvent.endTime.difference(newEvent.startTime),
+        ));
       }
-    });
+      return newEvent.id;
+    }
+    final id = await _scheduleController.addEvent(newEvent);
     if (newEvent.type == EventType.maintenance) {
+      final synced = newEvent.copyWith(id: id);
       AppScheduleStore.instance.addOrUpdateFromSchedule(SharedMaintenanceTask(
-        id: newEvent.id,
-        title: newEvent.title,
-        notes: newEvent.description,
-        assignedTo: newEvent.assignedStaff ?? 'Unassigned',
-        machineName: newEvent.machine ?? 'N/A',
-        machineId: newEvent.linkedId ?? newEvent.id,
-        scheduledDate: newEvent.startTime,
-        endDate: newEvent.endTime,
-        status: _toSharedStatus(newEvent.status),
-        estimatedDuration: newEvent.endTime.difference(newEvent.startTime),
+        id: synced.id,
+        title: synced.title,
+        notes: synced.description,
+        assignedTo: synced.assignedStaff ?? 'Unassigned',
+        machineName: synced.machine ?? 'N/A',
+        machineId: synced.linkedId ?? synced.id,
+        scheduledDate: synced.startTime,
+        endDate: synced.endTime,
+        status: _toSharedStatus(synced.status),
+        estimatedDuration: synced.endTime.difference(synced.startTime),
       ));
     }
+    return id;
   }
 
   SharedTaskStatus _toSharedStatus(EventStatus s) => switch (s) {
@@ -376,7 +215,7 @@ mixin _ScheduleStateMixin<T extends StatefulWidget> on State<T> {
 // ─────────────────────────────────────────────
 class _EventFormDialog extends StatefulWidget {
   final ScheduleEvent? existing;
-  final ValueChanged<ScheduleEvent> onSave;
+  final Future<void> Function(ScheduleEvent) onSave;
 
   const _EventFormDialog({this.existing, required this.onSave});
 
@@ -403,12 +242,13 @@ class _EventFormDialogState extends State<_EventFormDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
+    final n = DateTime.now();
     _titleCtrl.text = e?.title ?? '';
     _descCtrl.text  = e?.description ?? '';
     _type        = e?.type   ?? EventType.meeting;
     _status      = e?.status ?? EventStatus.pending;
-    _startTime   = e?.startTime ?? DateTime(_now.year, _now.month, _now.day, 9, 0);
-    _endTime     = e?.endTime   ?? DateTime(_now.year, _now.month, _now.day, 10, 0);
+    _startTime   = e?.startTime ?? DateTime(n.year, n.month, n.day, 9, 0);
+    _endTime     = e?.endTime   ?? DateTime(n.year, n.month, n.day, 10, 0);
     final initialDuration = _endTime.difference(_startTime);
     _duration = initialDuration.inMinutes <= 0
         ? const Duration(hours: 1)
@@ -426,9 +266,6 @@ class _EventFormDialogState extends State<_EventFormDialog> {
     _descCtrl.dispose();
     super.dispose();
   }
-
-  String _generateId() =>
-      'EVT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
   DateTime get _computedEndTime => _startTime.add(_duration);
 
@@ -560,7 +397,7 @@ class _EventFormDialogState extends State<_EventFormDialog> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_titleCtrl.text.trim().isEmpty) return;
     // Guard against invalid times; end is always derived from start + duration
     if (_computedEndTime.isBefore(_startTime)) {
@@ -572,19 +409,28 @@ class _EventFormDialogState extends State<_EventFormDialog> {
       );
       return;
     }
-    widget.onSave(ScheduleEvent(
-      id: widget.existing?.id ?? _generateId(),
-      title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim(),
-      type: _type,
-      status: _status,
-      startTime: _startTime,
-      endTime: _computedEndTime,
-      assignedStaff: _staff,
-      machine: _machine,
-      location: _location,
-      isAdminTask: _isAdminTask,
-    ));
+    await AAppLoading.showWhile<void>(
+      context,
+      () async => widget.onSave(
+        ScheduleEvent(
+          id: widget.existing?.id ?? '',
+          title: _titleCtrl.text.trim(),
+          description: _descCtrl.text.trim(),
+          type: _type,
+          status: _status,
+          startTime: _startTime,
+          endTime: _computedEndTime,
+          assignedStaff: _staff,
+          machine: _machine,
+          location: _location,
+          isAdminTask: _isAdminTask,
+        ),
+      ),
+      message: widget.existing == null
+          ? 'Saving event...'
+          : 'Updating event...',
+    );
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
@@ -1329,6 +1175,72 @@ class _PickerSheet extends StatelessWidget {
         icon: Icons.assignment_rounded
       ),
     };
+
+/// Distinct [EventType]s on a day, in enum order (stable chips / legend).
+List<EventType> _distinctEventTypesOrdered(List<ScheduleEvent> dayEvents) {
+  final present = dayEvents.map((e) => e.type).toSet();
+  return EventType.values.where((t) => present.contains(t)).toList();
+}
+
+Widget _calendarDayTypeIcons(
+  List<EventType> types, {
+  required double iconSize,
+  int maxIcons = 5,
+  Color? iconColor,
+}) {
+  if (types.isEmpty) return const SizedBox.shrink();
+  final show = types.take(maxIcons).toList();
+  final moreTypes = types.length - show.length;
+  final accent = iconColor;
+  final overflowColor = accent ?? _C.textMuted;
+  return Wrap(
+    spacing: 3,
+    runSpacing: 2,
+    children: [
+      ...show.map((t) {
+        final m = _typeMeta(t);
+        return Icon(m.icon, size: iconSize, color: accent ?? m.color);
+      }),
+      if (moreTypes > 0)
+        Text(
+          '+$moreTypes',
+          style: TextStyle(
+            fontSize: iconSize * 0.65,
+            fontWeight: FontWeight.w700,
+            color: overflowColor,
+          ),
+        ),
+    ],
+  );
+}
+
+/// Compact icon legend for calendar month views.
+Widget _calendarTypeLegendStrip() => Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 6,
+        children: EventType.values.map((t) {
+          final m = _typeMeta(t);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(m.icon, size: 13, color: m.color),
+              const SizedBox(width: 4),
+              Text(
+                m.label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: _C.textSecondary,
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
 
 ({Color color, Color light, String label}) _statusMeta(EventStatus s) =>
     switch (s) {

@@ -22,3 +22,27 @@ extension MachineTypeX on MachineType {
     );
   }
 }
+
+extension EventTypeX on EventType {
+  String get value => name;
+
+  static EventType fromString(String? value) {
+    if (value == null || value.isEmpty) return EventType.meeting;
+    return EventType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => EventType.meeting,
+    );
+  }
+}
+
+extension EventStatusX on EventStatus {
+  String get value => name;
+
+  static EventStatus fromString(String? value) {
+    if (value == null || value.isEmpty) return EventStatus.pending;
+    return EventStatus.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => EventStatus.pending,
+    );
+  }
+}

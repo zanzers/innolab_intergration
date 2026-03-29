@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:innolab/src/common/loader/app_loader.dart';
 import 'package:innolab/src/features/auth/controllers/auth_controller.dart';
 
 /// Admin-only form to create Firebase Auth + Firestore records for staff (level 2).
@@ -14,45 +16,71 @@ class _AdminAddStaffScreenState extends State<AdminAddStaffScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
   bool _loading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  String? _emailErrorMsg;
 
   static const _indigo = Color(0xFF4F46E5);
+
+  String? get _emailError => _emailErrorMsg;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+
+    setState(() {
+      _loading = true;
+      _emailErrorMsg = null; // reset error
+    });
+
     try {
-      // await AAuthController.instance.registerStaffByAdmin(
-      //   fullName: _nameCtrl.text,
-      //   email: _emailCtrl.text,
-      //   password: _passwordCtrl.text,
-      // );
+      await AAppLoading.showWhile(context, () async {
+        await AAuthController.instance.registerStaffByAdmin(
+          fullName: _nameCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+        );
+      }, message: 'Saving account...');
+
       if (mounted) {
+        final pwd = AAuthController.staffDefaultTempPassword;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Account created'),
+            content: Text(
+              'Temporary password:\n\n$pwd\n\n'
+              'Ask the staff member to change it after first sign-in.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+
         _formKey.currentState!.reset();
         _nameCtrl.clear();
         _emailCtrl.clear();
-        _passwordCtrl.clear();
-        _confirmCtrl.clear();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          if (e.code == 'email-already-in-use') {
+            _emailErrorMsg = 'This email is already registered';
+          }
+        });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -117,10 +145,14 @@ class _AdminAddStaffScreenState extends State<AdminAddStaffScreen> {
                   TextFormField(
                     controller: _nameCtrl,
                     textInputAction: TextInputAction.next,
+                    style: const TextStyle(color: Colors.black), 
                     decoration: _fieldDecoration('Full name'),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return 'Enter a name';
+                      }
+                      if (v.trim().split(' ').length < 2) {
+                        return 'Enter full name';
                       }
                       return null;
                     },
@@ -129,76 +161,38 @@ class _AdminAddStaffScreenState extends State<AdminAddStaffScreen> {
                   TextFormField(
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
+                    textInputAction: TextInputAction.done,
+                    style: const TextStyle(color: Colors.black), 
                     autofillHints: const [AutofillHints.email],
-                    decoration: _fieldDecoration('Work email'),
+                    onFieldSubmitted: (_) {
+                      if (!_loading) _submit();
+                    },
+                    decoration: _fieldDecoration(
+                      'Work email',
+                    ).copyWith(errorText: _emailError),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return 'Enter an email';
                       }
+                      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                      if (!emailRegex.hasMatch(v.trim())) {
+                        return 'Enter a valid email';
+                      }
                       if (!v.contains('@')) return 'Enter a valid email';
+
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordCtrl,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.next,
-                    decoration: _fieldDecoration('Temporary password').copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Iconsax.eye_slash
-                              : Iconsax.eye,
-                          size: 20,
-                          color: Colors.grey.shade600,
-                        ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                      ),
+                  Text(
+                    '* Staff password default: ${AAuthController.staffDefaultTempPassword}. '
+                    'Remind them to change it after first login.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade700,
+                      height: 1.4,
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return 'Enter a password';
-                      }
-                      if (v.length < 6) {
-                        return 'At least 6 characters';
-                      }
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmCtrl,
-                    obscureText: _obscureConfirm,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) {
-                      if (!_loading) _submit();
-                    },
-                    decoration: _fieldDecoration('Confirm password').copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirm
-                              ? Iconsax.eye_slash
-                              : Iconsax.eye,
-                          size: 20,
-                          color: Colors.grey.shade600,
-                        ),
-                        onPressed: () => setState(
-                          () => _obscureConfirm = !_obscureConfirm,
-                        ),
-                      ),
-                    ),
-                    validator: (v) {
-                      if (v != _passwordCtrl.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _loading ? null : _submit,
                     style: FilledButton.styleFrom(
@@ -232,6 +226,7 @@ class _AdminAddStaffScreenState extends State<AdminAddStaffScreen> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: const TextStyle(color: Colors.black),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
@@ -246,8 +241,7 @@ class _AdminAddStaffScreenState extends State<AdminAddStaffScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: _indigo, width: 1.5),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

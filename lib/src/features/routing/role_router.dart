@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:innolab/src/features/core/admin/home/screens/admin_home_web.dart';
+import 'package:innolab/src/features/home/screens/staff_home_screen.dart';
 import 'package:innolab/src/features/home/screens/user_home_web.dart';
-
 
 class RoleRouter extends StatelessWidget {
   final int level;
@@ -18,6 +18,8 @@ class RoleRouter extends StatelessWidget {
     switch (level) {
       case 3:
         return const AdminHomeWeb();
+      case 2:
+        return const StaffHomeScreen();
       default:
         return const UserHomeWeb();
     }

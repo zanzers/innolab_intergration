@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:innolab/src/features/auth/controllers/auth_controller.dart';
 import 'package:innolab/src/features/auth/marcelo_login/screens/user_login_screen.dart';
-
 
 class UserRegisterMobile extends StatelessWidget {
   const UserRegisterMobile({super.key});
@@ -9,9 +9,7 @@ class UserRegisterMobile extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: _MobileBody(),
-      ),
+      body: SafeArea(child: _MobileBody()),
     );
   }
 }
@@ -47,24 +45,36 @@ class _MobileBodyState extends State<_MobileBody> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Replace with your actual registration logic
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await AAuthController.instance.registerUser(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-    setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully!'),
+          backgroundColor: Colors.indigo,
+        ),
+      );
 
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Account created successfully!'),
-        backgroundColor: Colors.indigo,
-      ),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const UserLoginScreen()),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const UserLoginScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: $e'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   InputDecoration _fieldDecoration({
@@ -78,13 +88,11 @@ class _MobileBodyState extends State<_MobileBody> {
       hintText: hint,
       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
       labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-      prefixIcon:
-          Icon(prefixIcon, size: 20, color: Colors.grey.shade500),
+      prefixIcon: Icon(prefixIcon, size: 20, color: Colors.grey.shade500),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.grey.shade50,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -103,8 +111,7 @@ class _MobileBodyState extends State<_MobileBody> {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide:
-            const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
     );
   }
@@ -149,11 +156,13 @@ class _MobileBodyState extends State<_MobileBody> {
                   decoration: BoxDecoration(
                     color: Colors.indigo.shade50,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.indigo.shade200, width: 2),
+                    border: Border.all(color: Colors.indigo.shade200, width: 2),
                   ),
-                  child: Icon(Icons.person_add_outlined,
-                      size: 40, color: Colors.indigo),
+                  child: Icon(
+                    Icons.person_add_outlined,
+                    size: 40,
+                    color: Colors.indigo,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -291,8 +300,8 @@ class _MobileBodyState extends State<_MobileBody> {
                         color: Colors.grey.shade500,
                         size: 20,
                       ),
-                      onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (value) {
@@ -325,9 +334,10 @@ class _MobileBodyState extends State<_MobileBody> {
                         color: Colors.grey.shade500,
                         size: 20,
                       ),
-                      onPressed: () => setState(() =>
-                          _obscureConfirmPassword =
-                              !_obscureConfirmPassword),
+                      onPressed: () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                     ),
                   ),
                   validator: (value) {

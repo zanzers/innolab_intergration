@@ -31,7 +31,8 @@ class _MobileScheduleViewState extends State<_MobileScheduleView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Obx(
+      () => Scaffold(
       backgroundColor: _C.bg,
       // ── AppBar ──
       appBar: _buildAppBar(),
@@ -146,6 +147,7 @@ class _MobileScheduleViewState extends State<_MobileScheduleView>
             style: TextStyle(fontWeight: FontWeight.w700)),
         elevation: 3,
       ),
+    ),
     );
   }
 
@@ -460,21 +462,21 @@ class _MobileScheduleViewState extends State<_MobileScheduleView>
       backgroundColor: Colors.transparent,
       builder: (_) => _MobileEventDetailSheet(
         event: event,
-        onStatusChange: (status) {
-          handleStatusChange(event, status);
-          Navigator.pop(context);
+        onStatusChange: (status) async {
+          await handleStatusChange(event, status);
+          if (context.mounted) Navigator.pop(context);
         },
         onEdit: () {
           Navigator.pop(context);
           _openFormDialog(event: event);
         },
-        onDelete: () {
-          Navigator.pop(context);
-          handleDelete(event);
+        onDelete: () async {
+          await handleDelete(event);
+          if (context.mounted) Navigator.pop(context);
         },
-        onQuickAction: (action) {
-          handleQuickAction(event, action);
-          Navigator.pop(context);
+        onQuickAction: (action) async {
+          await handleQuickAction(event, action);
+          if (context.mounted) Navigator.pop(context);
         },
       ),
     );
@@ -488,7 +490,9 @@ class _MobileScheduleViewState extends State<_MobileScheduleView>
       barrierColor: Colors.black54,
       builder: (_) => _EventFormDialog(
         existing: event,
-        onSave: (newEvent) => handleSave(newEvent, event),
+        onSave: (newEvent) async {
+          await handleSave(newEvent, event);
+        },
       ),
     );
   }
@@ -948,90 +952,123 @@ class _MobileMonthlyView extends StatelessWidget {
             ),
           ]),
           const SizedBox(height: 8),
-          // Day header row
-          Row(
-            children: dayHeaders
-                .map((h) => Expanded(
-                      child: Center(
-                        child: Text(h,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: _C.textMuted)),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 4),
-          // Grid
-          ...List.generate(rows, (row) {
-            return Row(
-              children: List.generate(7, (col) {
-                final cellIndex = row * 7 + col;
-                final dayNum    = cellIndex - startOffset + 1;
-                if (dayNum < 1 || dayNum > lastDay.day) {
-                  return const Expanded(
-                      child: SizedBox(height: 44));
-                }
-                final day = DateTime(
-                    focusedDay.year, focusedDay.month, dayNum);
-                final hasEvents = events.any((e) =>
-                    e.startTime.year  == day.year &&
-                    e.startTime.month == day.month &&
-                    e.startTime.day   == day.day);
-                final isToday    = _isSameDay(day, DateTime.now());
-                final isSelected = _isSameDay(day, selectedDay);
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => onDayTap(day),
-                    child: Container(
-                      height: 44,
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? _C.indigo
-                            : isToday
-                                ? _C.indigoLight
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$dayNum',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: isToday || isSelected
-                                  ? FontWeight.w800
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : isToday
-                                      ? _C.indigo
-                                      : _C.textPrimary,
-                            ),
-                          ),
-                          if (hasEvents)
-                            Container(
-                              width: 4, height: 4,
-                              margin: const EdgeInsets.only(top: 2),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.white.withOpacity(0.7)
-                                    : _C.indigo,
-                                shape: BoxShape.circle,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _C.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Table(
+              border: TableBorder.all(
+                color: _C.border.withOpacity(0.75),
+                width: 0.5,
+              ),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: [
+                TableRow(
+                  decoration: const BoxDecoration(color: Color(0xFFF3F5F9)),
+                  children: dayHeaders
+                      .map((h) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: Text(
+                                h,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: _C.textMuted,
+                                ),
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            );
-          }),
+                          ))
+                      .toList(),
+                ),
+                ...List.generate(rows, (row) {
+                  return TableRow(
+                    children: List.generate(7, (col) {
+                      final cellIndex = row * 7 + col;
+                      final dayNum = cellIndex - startOffset + 1;
+                      const cellH = 62.0;
+                      if (dayNum < 1 || dayNum > lastDay.day) {
+                        return TableCell(
+                          child: Container(
+                            height: cellH,
+                            color: const Color(0xFFF7F8FA),
+                          ),
+                        );
+                      }
+                      final day = DateTime(
+                          focusedDay.year, focusedDay.month, dayNum);
+                      final dayEvents = events
+                          .where((e) =>
+                              e.startTime.year == day.year &&
+                              e.startTime.month == day.month &&
+                              e.startTime.day == day.day)
+                          .toList();
+                      final types = _distinctEventTypesOrdered(dayEvents);
+                      final isToday = _isSameDay(day, DateTime.now());
+                      final isSelected = _isSameDay(day, selectedDay);
+
+                      return TableCell(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onDayTap(day),
+                          child: Container(
+                            height: cellH,
+                            color: isSelected
+                                ? _C.indigo
+                                : isToday
+                                    ? _C.indigoLight
+                                    : Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 2, vertical: 4),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$dayNum',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isToday || isSelected
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : isToday
+                                            ? _C.indigo
+                                            : _C.textPrimary,
+                                  ),
+                                ),
+                                if (types.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  SizedBox(
+                                    height: 22,
+                                    width: double.infinity,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: _calendarDayTypeIcons(
+                                        types,
+                                        iconSize: 12,
+                                        iconColor: isSelected
+                                            ? Colors.white
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  );
+                }),
+              ],
+            ),
+          ),
+          _calendarTypeLegendStrip(),
         ]),
       ),
       // Events for selected day

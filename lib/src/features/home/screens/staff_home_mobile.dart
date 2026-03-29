@@ -1,20 +1,20 @@
-  import 'package:flutter/material.dart';
-import 'package:innolab/src/features/core/client/home/screens/user_home_tab.dart';
-import 'package:innolab/src/features/core/client/message/screens/user_message_screen.dart';
-import 'package:innolab/src/features/core/client/quote/screens/user_quote_screen.dart';
-import 'package:innolab/src/features/core/client/request/screens/user_request_screen.dart';
-import 'package:innolab/src/features/core/client/schedule/screens/user_schedule_screen.dart';
-import 'package:innolab/src/features/home/widgets/user_sidebar.dart';
+import 'package:flutter/material.dart';
+import 'package:innolab/src/features/home/widgets/staff_sidebar.dart';
+import 'package:innolab/src/features/core/staff/home/screens/staff_home_tab.dart';
+import 'package:innolab/src/features/core/staff/machine/screens/staff_machine_tab.dart';
+import 'package:innolab/src/features/core/staff/received/screens/staff_received_screen.dart';
+import 'package:innolab/src/features/core/staff/message/screens/staff_message_screen.dart';
+import 'package:innolab/src/features/core/staff/schedule/screens/staff_schedule_screen.dart';
 
-class UserHomeMobile extends StatefulWidget {
-  const UserHomeMobile({super.key});
+class StaffHomeMobile extends StatefulWidget {
+  const StaffHomeMobile({super.key});
 
   @override
-  State<UserHomeMobile> createState() => _UserHomeMobileState();
+  State<StaffHomeMobile> createState() => _StaffHomeMobileState();
 }
 
-class _UserHomeMobileState extends State<UserHomeMobile> {
-  UserNavItem _selectedItem = UserNavItem.home;
+class _StaffHomeMobileState extends State<StaffHomeMobile> {
+  StaffNavItem _selectedItem = StaffNavItem.home;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -30,13 +30,13 @@ class _UserHomeMobileState extends State<UserHomeMobile> {
         width: 220,
         backgroundColor: Colors.white,
         child: SafeArea(
-          child: UserSidebar(
+          child: StaffSidebar(
             selectedItem: _selectedItem,
             onItemSelected: (item) {
               setState(() => _selectedItem = item);
               Navigator.pop(context);
             },
-            userName: 'Marcelo',
+            userName: 'Staff Name',
             userAvatarUrl: null,
             onLogout: () {
               Navigator.pop(context);
@@ -44,7 +44,7 @@ class _UserHomeMobileState extends State<UserHomeMobile> {
               // Navigator.pushReplacement(
               //   context,
               //   MaterialPageRoute(
-              //     builder: (context) => const UserLoginScreen(),
+              //     builder: (context) => const StaffLoginScreen(),
               //   ),
               // );
             },
@@ -115,10 +115,10 @@ class _UserHomeMobileState extends State<UserHomeMobile> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundColor: Colors.indigo.shade100,
+                              backgroundColor: Colors.teal.shade100,
                               child: Icon(Icons.person,
                                   size: 18,
-                                  color: Colors.indigo.shade700),
+                                  color: Colors.teal.shade700),
                             ),
                             const SizedBox(width: 6),
                             Column(
@@ -133,7 +133,7 @@ class _UserHomeMobileState extends State<UserHomeMobile> {
                                   ),
                                 ),
                                 Text(
-                                  'Marcelo',
+                                  'Staff Name',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -161,39 +161,33 @@ class _UserHomeMobileState extends State<UserHomeMobile> {
     );
   }
 
-  String _navItemLabel(UserNavItem item) {
+  String _navItemLabel(StaffNavItem item) {
     switch (item) {
-      case UserNavItem.home:
+      case StaffNavItem.home:
         return 'Home';
-      case UserNavItem.quote:
-        return 'Quote';
-      case UserNavItem.receipt:
-        return 'Request';
-      case UserNavItem.message:
+      case StaffNavItem.machine:
+        return 'Machine';
+      case StaffNavItem.received:
+        return 'Received';
+      case StaffNavItem.message:
         return 'Message';
-      case UserNavItem.schedule:
+      case StaffNavItem.schedule:
         return 'Schedule';
-      case UserNavItem.request:
-        // TODO: Handle this case.
-        throw UnimplementedError();
     }
   }
 
   Widget _buildContent() {
     switch (_selectedItem) {
-      case UserNavItem.home:
-        return const UserHomeTab();
-      case UserNavItem.quote:
-        return const UserQuoteScreen();
-      case UserNavItem.receipt:
-        return const UserRequestScreen();
-      case UserNavItem.message:
-        return const UserMessageScreen();
-      case UserNavItem.schedule:
-        return const UserScheduleScreen();
-      case UserNavItem.request:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+      case StaffNavItem.home:
+        return StaffHomeTab();
+      case StaffNavItem.machine:
+        return StaffMachineTab();
+      case StaffNavItem.received:
+        return StaffReceivedScreen();
+      case StaffNavItem.message:
+        return StaffMessageScreen();
+      case StaffNavItem.schedule:
+        return StaffScheduleScreen();
     }
   }
 }

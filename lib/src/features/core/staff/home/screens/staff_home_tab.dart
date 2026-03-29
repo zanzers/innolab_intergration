@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:innolab/src/features/core/staff/staffController/staff_controller.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock data matching the rest of the app
 // ─────────────────────────────────────────────────────────────────────────────
-
-const String _staffName = 'Staff Name';
 
 class _RequestItem {
   final String id;
@@ -270,8 +270,8 @@ class _Greeting extends StatelessWidget {
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
 
     return Row(
       children: [
@@ -279,22 +279,39 @@ class _Greeting extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$greeting, $_staffName 👋',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Here's what's happening today.",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+              Obx(() {
+                final staff = StaffController.instance;
+                final name = staff.fullName.isNotEmpty
+                    ? staff.fullName
+                    : 'Staff';
+                final role = staff.roleDisplay.isNotEmpty
+                    ? staff.roleDisplay
+                    : 'Staff';
+                print(
+                  'StaffHomeTab._Greeting Obx triggered - name: "$name", role: "$role"',
+                );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting, $name 👋',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'You are logged in as $role',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         ),
@@ -328,8 +345,18 @@ class _Greeting extends StatelessWidget {
   String _formatToday() {
     final now = DateTime.now();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[now.month - 1]} ${now.day}, ${now.year}';
   }
@@ -344,36 +371,106 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (_, c) {
-      if (c.maxWidth < 500) {
-        return Column(
+    return LayoutBuilder(
+      builder: (_, c) {
+        if (c.maxWidth < 500) {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Iconsax.cpu,
+                      label: 'Machines Active',
+                      value: '2',
+                      sub: 'of 5 total',
+                      color: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Iconsax.document_download,
+                      label: 'Pending',
+                      value: '${_pendingRequests.length}',
+                      sub: 'requests',
+                      color: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      icon: Iconsax.calendar_1,
+                      label: "Today's Schedules",
+                      value: '${_todaySchedule.length}',
+                      sub: 'appointments',
+                      color: const Color(0xFF3B82F6),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Iconsax.tick_circle,
+                      label: 'Completed',
+                      value: '${_recentHistory.length}',
+                      sub: 'recent jobs',
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+        return Row(
           children: [
-            Row(children: [
-              Expanded(child: _StatCard(icon: Iconsax.cpu, label: 'Machines Active', value: '2', sub: 'of 5 total', color: Colors.teal)),
-              const SizedBox(width: 12),
-              Expanded(child: _StatCard(icon: Iconsax.document_download, label: 'Pending', value: '${_pendingRequests.length}', sub: 'requests', color: const Color(0xFFF59E0B))),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _StatCard(icon: Iconsax.calendar_1, label: "Today's Schedules", value: '${_todaySchedule.length}', sub: 'appointments', color: const Color(0xFF3B82F6))),
-              const SizedBox(width: 12),
-              Expanded(child: _StatCard(icon: Iconsax.tick_circle, label: 'Completed', value: '${_recentHistory.length}', sub: 'recent jobs', color: const Color(0xFF10B981))),
-            ]),
+            Expanded(
+              child: _StatCard(
+                icon: Iconsax.cpu,
+                label: 'Machines Active',
+                value: '2',
+                sub: 'of 5 total',
+                color: Colors.teal,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _StatCard(
+                icon: Iconsax.document_download,
+                label: 'Pending',
+                value: '${_pendingRequests.length}',
+                sub: 'requests',
+                color: const Color(0xFFF59E0B),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _StatCard(
+                icon: Iconsax.calendar_1,
+                label: "Today's Schedules",
+                value: '${_todaySchedule.length}',
+                sub: 'appointments',
+                color: const Color(0xFF3B82F6),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _StatCard(
+                icon: Iconsax.tick_circle,
+                label: 'Completed',
+                value: '${_recentHistory.length}',
+                sub: 'recent jobs',
+                color: const Color(0xFF10B981),
+              ),
+            ),
           ],
         );
-      }
-      return Row(
-        children: [
-          Expanded(child: _StatCard(icon: Iconsax.cpu, label: 'Machines Active', value: '2', sub: 'of 5 total', color: Colors.teal)),
-          const SizedBox(width: 14),
-          Expanded(child: _StatCard(icon: Iconsax.document_download, label: 'Pending', value: '${_pendingRequests.length}', sub: 'requests', color: const Color(0xFFF59E0B))),
-          const SizedBox(width: 14),
-          Expanded(child: _StatCard(icon: Iconsax.calendar_1, label: "Today's Schedules", value: '${_todaySchedule.length}', sub: 'appointments', color: const Color(0xFF3B82F6))),
-          const SizedBox(width: 14),
-          Expanded(child: _StatCard(icon: Iconsax.tick_circle, label: 'Completed', value: '${_recentHistory.length}', sub: 'recent jobs', color: const Color(0xFF10B981))),
-        ],
-      );
-    });
+      },
+    );
   }
 }
 
@@ -474,9 +571,7 @@ class _PendingRequestsCard extends StatelessWidget {
       icon: Iconsax.document_download,
       count: _pendingRequests.length,
       child: Column(
-        children: [
-          ..._pendingRequests.map((r) => _RequestRow(request: r)),
-        ],
+        children: [..._pendingRequests.map((r) => _RequestRow(request: r))],
       ),
     );
   }
@@ -508,7 +603,10 @@ class _RequestRow extends StatelessWidget {
                   bottom: 5,
                   right: 5,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 3,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: request.color,
                       borderRadius: BorderRadius.circular(3),
@@ -516,9 +614,10 @@ class _RequestRow extends StatelessWidget {
                     child: Text(
                       request.file.split('.').last.toUpperCase(),
                       style: const TextStyle(
-                          fontSize: 6,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white),
+                        fontSize: 6,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -596,60 +695,74 @@ class _TodayScheduleCard extends StatelessWidget {
       count: _todaySchedule.length,
       child: Column(
         children: _todaySchedule
-            .map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: s.color,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+            .map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: s.color,
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              s.title,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF111111),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.title,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF111111),
                             ),
-                            const SizedBox(height: 2),
-                            Row(children: [
-                              Icon(Iconsax.clock,
-                                  size: 10, color: Colors.grey.shade400),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Iconsax.clock,
+                                size: 10,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 4),
-                              Text(s.time,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500)),
+                              Text(
+                                s.time,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
                               if (s.user != null) ...[
-                                Text('  ·  ',
-                                    style: TextStyle(
-                                        color: Colors.grey.shade400)),
+                                Text(
+                                  '  ·  ',
+                                  style: TextStyle(color: Colors.grey.shade400),
+                                ),
                                 Expanded(
-                                  child: Text(s.user!,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade500),
-                                      overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    s.user!,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
-                            ]),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ))
+                    ),
+                  ],
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -664,11 +777,15 @@ class _MachineStatusCard extends StatelessWidget {
   const _MachineStatusCard();
 
   static const _items = [
-    (name: 'Ender-3 V3 SE',     status: 'In Use',      color: Color(0xFF3B82F6)),
-    (name: 'Saturn 3 Ultra',     status: 'Available',   color: Color(0xFF22C55E)),
-    (name: 'Wash & Cure 3 Plus', status: 'Maintenance', color: Color(0xFFF59E0B)),
-    (name: 'X1 Carbon',          status: 'Available',   color: Color(0xFF22C55E)),
-    (name: 'Einstar Scanner',    status: 'Available',   color: Color(0xFF22C55E)),
+    (name: 'Ender-3 V3 SE', status: 'In Use', color: Color(0xFF3B82F6)),
+    (name: 'Saturn 3 Ultra', status: 'Available', color: Color(0xFF22C55E)),
+    (
+      name: 'Wash & Cure 3 Plus',
+      status: 'Maintenance',
+      color: Color(0xFFF59E0B),
+    ),
+    (name: 'X1 Carbon', status: 'Available', color: Color(0xFF22C55E)),
+    (name: 'Einstar Scanner', status: 'Available', color: Color(0xFF22C55E)),
   ];
 
   @override
@@ -678,48 +795,52 @@ class _MachineStatusCard extends StatelessWidget {
       icon: Iconsax.cpu,
       child: Column(
         children: _items
-            .map((m) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
+            .map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: m.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        m.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF111111),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: m.color.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        m.status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
                           color: m.color,
-                          shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          m.name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF111111),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: m.color.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          m.status,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: m.color,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ))
+                    ),
+                  ],
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -895,7 +1016,10 @@ class _DashCard extends StatelessWidget {
               if (count != null) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),

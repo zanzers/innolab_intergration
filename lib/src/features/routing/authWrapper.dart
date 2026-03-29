@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:innolab/src/features/auth/controllers/currentUser.dart';
 import 'package:innolab/src/features/auth/marcelo_login/screens/user_login_web.dart';
+import 'package:innolab/src/features/core/controller/profileController/profile_controller.dart';
+import 'package:innolab/src/features/core/staff/staffController/staff_controller.dart';
+import 'package:innolab/src/features/models/user_model.dart';
 import 'package:innolab/src/features/routing/role_router.dart';
 import 'package:innolab/src/repo/auth_repo/db_tableNames.dart';
 
@@ -14,23 +18,18 @@ class Authwrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges().distinct(),
       builder: (context, authSnapshot) {
-  
-
-
         if (authSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-   
         if (authSnapshot.hasData && authSnapshot.data != null) {
           final user = authSnapshot.data!;
 
           return FutureBuilder<DocumentSnapshot>(
             future: FirebaseFirestore.instance
-                .collection(
-                  DatabaseTable.user) 
+                .collection(DatabaseTable.user)
                 .doc(user.uid)
                 .get(),
 
@@ -55,19 +54,37 @@ class Authwrapper extends StatelessWidget {
                 final String role = data['role'] ?? 'client';
                 final String email = data['email'] ?? '';
 
-                // --- GLOBAL STATE UPDATES ---
-                // final profileController = Get.put(ProfileController());
-                // Future.microtask(() {
-                //   profileController.setUser(
-                //     UserModel(
-                //       id: user.uid,
-                //       fullName: fullName,
-                //       email: email,
-                //       role: role,
-                //       level: level,
-                //     ),
-                //   );
-                // });
+                if (!Get.isRegistered<ProfileController>()) {
+                  Get.put(ProfileController(), permanent: true);
+                }
+                Get.find<ProfileController>().setUser(
+                  UserModel(
+                    id: user.uid,
+                    fullName: fullName,
+                    email: email,
+                    role: role,
+                    level: level,
+                  ),
+                );
+
+                // Also set user data in StaffController for staff users
+                if (role == 'staff') {
+                  if (!Get.isRegistered<StaffController>()) {
+                    Get.put(StaffController(), permanent: true);
+                  }
+                  Get.find<StaffController>().setUser(
+                    UserModel(
+                      id: user.uid,
+                      fullName: fullName,
+                      email: email,
+                      role: role,
+                      level: level,
+                    ),
+                  );
+                  print(
+                    'AuthWrapper: Set staff user data - name: $fullName, role: $role',
+                  );
+                }
 
                 CurrentUser().uid = user.uid;
                 CurrentUser().fullName = fullName;
@@ -85,7 +102,9 @@ class Authwrapper extends StatelessWidget {
           );
         }
 
-        // 3. User is Logged Out
+        if (Get.isRegistered<ProfileController>()) {
+          Get.find<ProfileController>().clearUser();
+        }
         return const UserLoginWeb();
       },
     );

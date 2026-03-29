@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:innolab/src/features/auth/controllers/auth_controller.dart';
 import 'package:innolab/src/features/auth/marcelo_login/screens/user_login_screen.dart';
 
 class UserRegisterWeb extends StatelessWidget {
@@ -50,19 +51,13 @@ class UserRegisterWeb extends StatelessWidget {
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(64),
                         ),
-                        side: BorderSide(
-                          color: Colors.grey.shade500,
-                          width: 1,
-                        ),
+                        side: BorderSide(color: Colors.grey.shade500, width: 1),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Row(
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: _LeftPanel(theme: theme),
-                            ),
+                            Expanded(flex: 2, child: _LeftPanel(theme: theme)),
                             SizedBox(
                               height: 400,
                               child: VerticalDivider(
@@ -71,10 +66,7 @@ class UserRegisterWeb extends StatelessWidget {
                                 color: Colors.grey.shade300,
                               ),
                             ),
-                            const Expanded(
-                              flex: 3,
-                              child: _RightPanel(),
-                            ),
+                            const Expanded(flex: 3, child: _RightPanel()),
                           ],
                         ),
                       ),
@@ -111,8 +103,11 @@ class _LeftPanel extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.indigo.shade200, width: 2),
           ),
-          child: Icon(Icons.person_add_outlined,
-              size: 48, color: Colors.indigo),
+          child: Icon(
+            Icons.person_add_outlined,
+            size: 48,
+            color: Colors.indigo,
+          ),
         ),
         const SizedBox(height: 24),
         Text(
@@ -138,8 +133,9 @@ class _LeftPanel extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Or',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: Colors.black54),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.black54,
+                ),
               ),
             ),
             Expanded(child: Divider(color: Colors.grey.shade400)),
@@ -234,25 +230,37 @@ class _RightPanelState extends State<_RightPanel> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Replace with your actual registration logic
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await AAuthController.instance.registerUser(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-    setState(() => _isLoading = false);
+      if (!mounted) return;
 
-    if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully!'),
+          backgroundColor: Colors.indigo,
+        ),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Account created successfully!'),
-        backgroundColor: Colors.indigo,
-      ),
-    );
-
-    // TODO: Navigate to UserLoginScreen or UserHomeScreen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const UserLoginScreen()),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const UserLoginScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: $e'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   InputDecoration _fieldDecoration({
@@ -311,8 +319,9 @@ class _RightPanelState extends State<_RightPanel> {
           const SizedBox(height: 4),
           Text(
             'Fill in the details below to get started',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: Colors.grey.shade600),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.shade600,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -370,9 +379,7 @@ class _RightPanelState extends State<_RightPanel> {
               prefixIcon: Icons.lock_outline,
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
                   color: Colors.grey.shade700,
                   size: 20,
                 ),
@@ -410,8 +417,9 @@ class _RightPanelState extends State<_RightPanel> {
                   color: Colors.grey.shade700,
                   size: 20,
                 ),
-                onPressed: () => setState(() =>
-                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                onPressed: () => setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                ),
               ),
             ),
             validator: (value) {
@@ -490,8 +498,7 @@ class _SocialButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

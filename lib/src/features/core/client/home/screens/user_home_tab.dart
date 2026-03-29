@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:innolab/src/features/core/controller/profileController/profile_controller.dart';
 
 class UserHomeTab extends StatelessWidget {
   const UserHomeTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 900;
 
@@ -16,7 +17,8 @@ class UserHomeTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Welcome Banner ───────────────────────────────────────
+            
+            
             _WelcomeBanner(isDesktop: isDesktop),
             const SizedBox(height: 24),
 
@@ -151,14 +153,22 @@ class _WelcomeBanner extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Welcome back, Miku Nakano 👋',
-                      style: TextStyle(
-                        fontSize: isDesktop ? 28 : 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    Obx(() {
+                      final profile = Get.find<ProfileController>();
+                      final name =
+                          profile.user?.fullName.trim() ?? '';
+                      final welcome = name.isEmpty
+                          ? 'Welcome back 👋'
+                          : 'Welcome back, $name 👋';
+                      return Text(
+                        welcome,
+                        style: TextStyle(
+                          fontSize: isDesktop ? 28 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 8),
                     Text(
                       'Advanced Manufacturing Center — Your hub for 3D printing, CNC machining, and prototyping services.',
@@ -415,48 +425,49 @@ class _ServiceCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Top colored border
             Container(
               height: 6,
               color: data.color,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: data.color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(data.icon, size: 24, color: Colors.white),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: data.color,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      data.title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
+                    child: Icon(data.icon, size: 24, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    data.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Colors.black87,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      data.subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    data.subtitle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -32,7 +32,8 @@ class _WebScheduleViewState extends State<_WebScheduleView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Obx(
+      () => Scaffold(
       backgroundColor: _C.bg,
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,21 +108,24 @@ class _WebScheduleViewState extends State<_WebScheduleView>
               event: _selectedEvent!,
               onClose: () => setState(() => _selectedEvent = null),
               onEdit: () => _openFormDialog(event: _selectedEvent),
-              onStatusChange: (status) {
-                handleStatusChange(_selectedEvent!, status);
+              onStatusChange: (status) async {
+                await handleStatusChange(_selectedEvent!, status);
+                if (!mounted) return;
                 setState(() {
-                  final idx =
-                      events.indexWhere((e) => e.id == _selectedEvent!.id);
+                  final id = _selectedEvent!.id;
+                  final idx = events.indexWhere((e) => e.id == id);
                   if (idx != -1) _selectedEvent = events[idx];
                 });
               },
-              onDelete: () {
-                handleDelete(_selectedEvent!);
+              onDelete: () async {
+                await handleDelete(_selectedEvent!);
+                if (!mounted) return;
                 setState(() => _selectedEvent = null);
               },
             ),
         ],
       ),
+    ),
     );
   }
 
@@ -400,13 +404,15 @@ class _WebScheduleViewState extends State<_WebScheduleView>
       context: context,
       builder: (_) => _EventFormDialog(
         existing: event,
-        onSave: (newEvent) {
-          handleSave(newEvent, event);
-          if (_selectedEvent != null) {
+        onSave: (newEvent) async {
+          final savedId = await handleSave(newEvent, event);
+          if (!mounted) return;
+          if (_selectedEvent != null && savedId != null) {
             setState(() {
-              final idx =
-                  events.indexWhere((e) => e.id == newEvent.id);
-              if (idx != -1) _selectedEvent = events[idx];
+              final idx = events.indexWhere((e) => e.id == savedId);
+              _selectedEvent = idx != -1
+                  ? events[idx]
+                  : newEvent.copyWith(id: savedId);
             });
           }
         },
@@ -777,136 +783,159 @@ class _WebMonthlyView extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _C.border)),
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 10, horizontal: 4),
-              child: Row(
-                children: dayHeaders
-                    .map((h) => Expanded(
-                          child: Text(h,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _C.textMuted)),
-                        ))
-                    .toList(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(13),
+            child: Column(children: [
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFF3F5F9),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                child: Row(
+                  children: dayHeaders
+                      .map((h) => Expanded(
+                            child: Text(h,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: _C.textMuted)),
+                          ))
+                      .toList(),
+                ),
               ),
-            ),
-            const Divider(height: 1, color: _C.border),
-            ...List.generate(rows, (row) {
-              return Column(children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(7, (col) {
-                    final cellIndex = row * 7 + col;
-                    final dayNum = cellIndex - startOffset + 1;
-                    if (dayNum < 1 || dayNum > lastDay.day) {
-                      return Expanded(
-                        child: Container(
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFAFBFD),
-                            border: Border.all(
-                                color: _C.border.withOpacity(0.5),
-                                width: 0.5),
-                          ),
-                        ),
-                      );
-                    }
-                    final day = DateTime(
-                        focusedDay.year, focusedDay.month, dayNum);
-                    final dayEvents = events
-                        .where((e) =>
-                            e.startTime.year == day.year &&
-                            e.startTime.month == day.month &&
-                            e.startTime.day == day.day)
-                        .toList();
-                    final isToday = _isSameDay(day, DateTime.now());
-                    final isSelected = _isSameDay(day, selectedDay);
-
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => onDayTap(day),
-                        child: Container(
-                          height: 80,
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? _C.indigoLight
-                                : isToday
-                                    ? const Color(0xFFFAFBFD)
-                                    : Colors.white,
-                            border: Border.all(
-                                color: _C.border.withOpacity(0.5),
-                                width: 0.5),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 24, height: 24,
-                                decoration: BoxDecoration(
-                                  color: isToday
-                                      ? _C.indigo
-                                      : Colors.transparent,
-                                  shape: BoxShape.circle,
+              const Divider(height: 1, thickness: 1, color: _C.border),
+              ...List.generate(rows, (row) {
+                const cellH = 88.0;
+                return SizedBox(
+                  height: cellH,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: List.generate(7, (col) {
+                      final cellIndex = row * 7 + col;
+                      final dayNum = cellIndex - startOffset + 1;
+                      if (dayNum < 1 || dayNum > lastDay.day) {
+                        return Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FA),
+                              border: Border(
+                                right: BorderSide(
+                                  color: _C.border.withOpacity(0.55),
+                                  width: 0.5,
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    '$dayNum',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: isToday || isSelected
-                                          ? FontWeight.w800
-                                          : FontWeight.w500,
-                                      color: isToday
-                                          ? Colors.white
-                                          : isSelected
-                                              ? _C.indigo
-                                              : _C.textPrimary,
+                                bottom: BorderSide(
+                                  color: _C.border.withOpacity(0.55),
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final day = DateTime(
+                          focusedDay.year, focusedDay.month, dayNum);
+                      final dayEvents = events
+                          .where((e) =>
+                              e.startTime.year == day.year &&
+                              e.startTime.month == day.month &&
+                              e.startTime.day == day.day)
+                          .toList();
+                      final typeIcons =
+                          _distinctEventTypesOrdered(dayEvents);
+                      final isToday = _isSameDay(day, DateTime.now());
+                      final isSelected = _isSameDay(day, selectedDay);
+
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => onDayTap(day),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? _C.indigoLight
+                                  : isToday
+                                      ? const Color(0xFFFAFBFD)
+                                      : Colors.white,
+                              border: Border(
+                                right: BorderSide(
+                                  color: _C.border.withOpacity(0.55),
+                                  width: 0.5,
+                                ),
+                                bottom: BorderSide(
+                                  color: _C.border.withOpacity(0.55),
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        color: isToday
+                                            ? _C.indigo
+                                            : Colors.transparent,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$dayNum',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: isToday || isSelected
+                                                ? FontWeight.w800
+                                                : FontWeight.w600,
+                                            color: isToday
+                                                ? Colors.white
+                                                : isSelected
+                                                    ? _C.indigo
+                                                    : _C.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (dayEvents.isNotEmpty)
+                                      Text(
+                                        '${dayEvents.length}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: _C.textMuted,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.topLeft,
+                                    child: _calendarDayTypeIcons(
+                                      typeIcons,
+                                      iconSize: 15,
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              ...dayEvents.take(2).map((e) {
-                                final tm = _typeMeta(e.type);
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 2),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
-                                      color: tm.light,
-                                      borderRadius:
-                                          BorderRadius.circular(3)),
-                                  child: Text(e.title,
-                                      style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w600,
-                                          color: tm.color),
-                                      overflow: TextOverflow.ellipsis),
-                                );
-                              }),
-                              if (dayEvents.length > 2)
-                                Text('+${dayEvents.length - 2} more',
-                                    style: const TextStyle(
-                                        fontSize: 9,
-                                        color: _C.textMuted)),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                ),
-                if (row < rows - 1)
-                  const Divider(height: 1, color: _C.border),
-              ]);
-            }),
-          ]),
+                      );
+                    }),
+                  ),
+                );
+              }),
+            ]),
+          ),
         ),
+        _calendarTypeLegendStrip(),
         const SizedBox(height: 20),
         // ── Selected day event list ──
         Builder(builder: (_) {
