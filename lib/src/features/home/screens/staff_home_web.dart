@@ -22,7 +22,6 @@ class _StaffHomeWebState extends State<StaffHomeWeb> {
 
   final String? userAvatarUrl = null;
 
-  /// Extract initials from full name (e.g., "Fewell Saavedra" -> "FS")
   String _getInitials(String fullName) {
     final parts = fullName.trim().split(' ');
     if (parts.isEmpty) return '';
